@@ -14,3 +14,8 @@ src = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
 dst = cv.equalizeHist(src)
 cv.imwrite('Source_image.png', src)
 cv.imwrite('Equalized_Image.png', dst)
+
+
+cv.imshow('Source image', src)
+cv.imshow('Equalized Image', dst)
+cv.waitKey()
