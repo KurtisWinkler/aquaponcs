@@ -16,6 +16,6 @@ cv.imwrite('Source_image.png', src)
 cv.imwrite('Equalized_Image.png', dst)
 
 
-cv.imshow('Source image', src)
-cv.imshow('Equalized Image', dst)
-cv.waitKey()
+#cv.imshow('Source image', src)
+#cv.imshow('Equalized Image', dst)
+#cv.waitKey()
