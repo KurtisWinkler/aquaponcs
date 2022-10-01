@@ -2,11 +2,13 @@ import cv2 as cv
 import numpy as np
 
 # Read image
-im = cv.imread("ex11.tif", cv.IMREAD_GRAYSCALE)
-# im = cv.equalizeHist(im) #CREATE ENHANCE CONTRAST FUNCTION
+im = cv.imread("ex11.tif")
+#im = cv.equalizeHist(im) #CREATE ENHANCE CONTRAST FUNCTION
+
+im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 
 #im_blur = cv.blur(im, (11,11))
-im_blur = cv.GaussianBlur(im,(15,15),0)
+im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
 #cv.imshow('blur', im_blur)
 #cv.imshow('gaussian', im_gaussian)
@@ -55,9 +57,9 @@ keypoints = detector.detect(im_blur)
 
 # Draw detected blobs as red circles.
 # cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-im_with_keypoints = cv.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+im_keypoints = cv.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
 # Show keypoints
 cv.imshow("Original", im)
-cv.imshow("Keypoints", im_with_keypoints)
+cv.imshow("Keypoints", im_keypoints)
 cv.waitKey(0)
