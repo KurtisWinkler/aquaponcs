@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 
 # Read image
-im = cv2.imread("ex3.tif", cv2.IMREAD_GRAYSCALE)
+im = cv2.imread("ex11.tif", cv2.IMREAD_GRAYSCALE)
 # im = cv2.equalizeHist(im) #CREATE ENHANCE CONTRAST FUNCTION
-im = cv2.blur(im, (11,11))
+im_blur = cv2.blur(im, (11,11))
 
 # Set our filtering parameters
 # Initialize parameter setting using cv2.SimpleBlobDetector
@@ -45,7 +45,7 @@ params.filterByInertia = False
 detector = cv2.SimpleBlobDetector_create(params)
 
 # Detect blobs
-keypoints = detector.detect(im)
+keypoints = detector.detect(im_blur)
 #print(keypoints)
 
 # Draw detected blobs as red circles.
