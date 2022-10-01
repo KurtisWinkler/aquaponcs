@@ -5,7 +5,9 @@ Algorithm to Quantify Properties of Nuclear and Chromatin Structure
 conda create -n aqua\
 source activate aqua
 
-conda install pip?\
-pip install numpy\
-pip install matplotlib\
-pip install opencv-python
+python 3.10.4
+
+conda install pip (v. 22.1.2)\
+pip install numpy (v. 1.23.3)\
+pip install matplotlib (v. 3.6.0)\
+pip install opencv-python (v. 4.6.0.66)

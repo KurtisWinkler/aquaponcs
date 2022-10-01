@@ -1,65 +1,79 @@
-''' from https://docs.opencv.org/3.4/df/d0d/tutorial_find_contours.html '''
-'''
-from __future__ import print_function
+''' This code takes mulitple binary images at multiple thresholds
+    and then finds the contours.
+    The contour with the highest total area is selected to be drawn.
+    Will have to add a min_threshold parameter '''
+
 import cv2 as cv
 import numpy as np
-import argparse
-import random as rng
-rng.seed(12345)
 
-def thresh_callback(val):
-    threshold = val
-    
-    # Detect edges using Canny
-    canny_output = cv.Canny(src_gray, threshold, threshold * 2)
-    
-    # Find contours
-    contours, hierarchy = cv.findContours(canny_output, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    
-    # Draw contours
-    drawing = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
-    
-    for i in range(len(contours)):
-        color = (rng.randint(0,256), rng.randint(0,256), rng.randint(0,256))
-        cv.drawContours(drawing, contours, i, color, 2, cv.LINE_8, hierarchy, 0)
-        
-    # Show in a window
-    cv.imshow('Contours', drawing)
-    
 # Load source image
-parser = argparse.ArgumentParser(description='Code for Finding contours in your image tutorial.')
-parser.add_argument('--input', help='Path to input image.', default='HappyFish.jpg')
-args = parser.parse_args()
-src = cv.imread(cv.samples.findFile(args.input))
+im = cv.imread("ex3.tif")
+if im is None:
+    print('Could not open or find the image:', args.input)
+    exit(0)
 
-if src is None:
+# Gray and Blur image
+im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
+im_blur = cv.GaussianBlur(im_gray, (25,25), 0)
+
+contour_area = []
+contour_list = []
+for i in range(20,255,10):  # add min threshold for image parameter
+    ret, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
+    # cv.imshow('binary'+str(i), im_thresh)
+    # Find only the most external contours
+    contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    if len(contours) > 0:
+        for j in range(len(contours)):
+            contour_list.append(contours[j])  # add contours to main list
+            #contour_area.append(cv.contourArea(contours[j]))
+
+# find the contour with the highest area
+contour_max_area = max(contour_list, key=cv.contourArea)
+#print(contour_area)
+
+# draw the max contour
+im_copy = im.copy()
+cv.drawContours(im_copy, contour_max_area, -1, (0, 255, 0), 2, cv.LINE_8)
+
+# Display image
+cv.imshow('source_window', im)
+#cv.imshow('blur', im_blur)
+#cv.imshow('binary', im_thresh)
+cv.imshow('Contours', im_copy)
+
+cv.waitKey()
+
+
+'''
+# This code is for a single threshold; draws all contours; for reference
+
+# Load source image
+im = cv.imread("ex3.tif")
+if im is None:
     print('Could not open or find the image:', args.input)
     exit(0)
     
-# Convert image to gray and blur it
-src_gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
-src_gray = cv.blur(src_gray, (3,3))
+im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
+im_blur = cv.GaussianBlur(im_gray, (25,25), 0)
 
-# Create Window
-source_window = 'Source'
-cv.namedWindow(source_window)
-cv.imshow(source_window, src)
-max_thresh = 255
-thresh = 100 # initial threshold
-cv.createTrackbar('Canny Thresh:', source_window, thresh, max_thresh, thresh_callback)
-thresh_callback(thresh)
+ret, im_thresh = cv.threshold(im_blur, 127, 255, cv.THRESH_BINARY)
+
+# Find contours
+contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+print(contours)
+
+# Draw contours
+im_copy = im.copy()
+cv.drawContours(im_copy, contours, -1, (0, 255, 0), 2, cv.LINE_8)
+
+# Show in a window
+cv.imshow('source_window', im)
+cv.imshow('blur', im_blur)
+cv.imshow('binary', im_thresh)
+cv.imshow('Contours', im_copy)
+
 cv.waitKey()
 '''
 
-import numpy as np
-import cv2 as cv
-im = cv.imread('Equalized_image.png')
-imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-imgray = cv.blur(imgray, (15,15))
-ret, thresh = cv.threshold(imgray, 51, 255, cv.THRESH_BINARY)
-cv.imwrite('blur_gray.png', imgray)
-cv.imwrite('thresh.png', thresh)
-contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-cv.drawContours(thresh, contours, -1, (0,255,0), 3)
-cv.imwrite('source.png', im)
-cv.imwrite('Contours.png', thresh)
+
