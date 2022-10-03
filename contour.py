@@ -18,8 +18,8 @@ im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 #im_gray = cv.equalizeHist(im_gray)
 im_blur = cv.GaussianBlur(im_gray, (25,25), 0)
 
-contour_area = []
 contour_list = []
+mask_intensity_list = []
 for i in range(25,255,10):  # add min threshold for image parameter
     ret, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
     # cv.imshow('binary'+str(i), im_thresh)
@@ -28,10 +28,15 @@ for i in range(25,255,10):  # add min threshold for image parameter
     if len(contours) > 0:
         for j in range(len(contours)):
             contour_list.append(contours[j])  # add contours to main list
-            #contour_area.append(cv.contourArea(contours[j]))
+            mask_intensity_list.append(i)
 
 # find the contour with the highest area
 max_contour = max(contour_list, key=cv.contourArea)
+max_contour_idx = contour_list.index(max_contour)
+mask_intensity = mask_intensity_list[max_contour_idx]
+ret, mask = cv.threshold(im_blur, mask_intensity, 255, cv.THRESH_BINARY)
+im_mask = cv.bitwise_and(im, im, mask = mask)
+
 contour_area = cv.contourArea(max_contour)
 contour_perimeter = cv.arcLength(max_contour, True)
 contour_circularity = bp.get_circularity(max_contour)
@@ -52,6 +57,7 @@ cv.imshow('source_window', im)
 #cv.imshow('blur', im_blur)
 #cv.imshow('binary', im_thresh)
 cv.imshow('Contours', im_copy)
+cv.imshow('Masked', im_mask)
 
 cv.waitKey()
 
