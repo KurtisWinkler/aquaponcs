@@ -3,19 +3,24 @@
 import cv2 as cv
 import argparse
 
-parser = argparse.ArgumentParser(description='Code for Histogram Equalization tutorial.')
-parser.add_argument('--input', help='Path to input image.', default='lena.jpg')
-args = parser.parse_args()
-src = cv.imread(cv.samples.findFile(args.input))
-if src is None:
+# Load source image
+im = cv.imread("ex1.tif")
+if im is None:
     print('Could not open or find the image:', args.input)
     exit(0)
-src = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
-dst = cv.equalizeHist(src)
-cv.imwrite('Source_image.png', src)
-cv.imwrite('Equalized_Image.png', dst)
+
+# Gray and Blur image
+im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
+
+dst = cv.equalizeHist(im_gray)
+
+clahe = cv.createCLAHE(clipLimit=5.0, tileGridSize=(8,8))
+dst2 = clahe.apply(im_gray)
+#dst2 = cv.equalizeHist(dst2)
+
+cv.imshow('Source_image', im)
+cv.imshow('Equal_Image.png', dst)
+cv.imshow('CLAHE_image', dst2)
 
 
-#cv.imshow('Source image', src)
-#cv.imshow('Equalized Image', dst)
-#cv.waitKey()
+cv.waitKey()
