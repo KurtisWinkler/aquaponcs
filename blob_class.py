@@ -2,6 +2,8 @@ import numpy as np
 import cv2 as cv
 import math
 from skimage.measure import label, regionprops
+from scipy.stats import skew, kurtosis
+import matplotlib.pyplot as plt
 
 
 class Blob():
@@ -44,7 +46,7 @@ class Blob():
         perimeter = self.perimeter
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
         return circularity
-
+        
     @property
     def eccentricity(self):
         return self.region.eccentricity
@@ -54,19 +56,20 @@ class Blob():
         return self.region.equivalent_diameter_area
     
     @property
-    def image_convex(self):
+    def image_convex_bbox(self):
         im = self.region.image_convex.astype(np.uint8)
         im[im == 1] = 255
         return im
 
     @property
-    def image_mask(self):
+    def image_mask_bbox(self):
         im = self.region.image.astype(np.uint8)
         im[im == 1] = 255
         return im
 
     @property
-    def image_original_masked(self):
+    def image_masked(self):
+        '''Original image with mask'''
         return cv.bitwise_and(self.image,
                               self.image,
                               mask=self.mask)
@@ -81,10 +84,34 @@ class Blob():
     
     @property
     def perimeter_convex_hull(self):
-        convex_label = label(self.image_convex)
+        convex_label = label(self.image_convex_bbox)
         convex_perimeter = regionprops(convex_label)[0]['perimeter']
         return convex_perimeter
     
+    @property
+    def pixel_intensities(self):
+        coords = np.where(self.mask == 255)
+        if len(self.image.shape) >= 3:
+            image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
+            return image_gray[coords]
+        return self.image[coords]
+    
+    @property
+    def pixel_intensity_mean(self):
+        return np.mean(self.pixel_intensities)
+    
+    @property
+    def pixel_intensity_median(self):
+        return np.median(self.pixel_intensities)
+    
+    @property
+    def pixel_kurtosis(self):
+        return kurtosis(self.pixel_intensities, fisher=True, bias=False)
+    
+    @property
+    def pixel_skew(self):
+        return skew(self.pixel_intensities, bias=False, nan_policy='omit')
+            
     @property
     def roughness(self):
         return self.perimeter / self.perimeter_convex_hull
@@ -98,8 +125,13 @@ class Blob():
     @property
     def solidity(self):
         return self.region.solidity
-
-    def zproperties(self, dec=2):
+    
+    def pixel_intensity_at_percent(self, percent=75):
+        pixel_sort = np.sort(self.pixel_intensities)
+        idx = int(percent/100*len(pixel_sort))
+        return pixel_sort[idx]
+    
+    def print_properties(self, dec=2):
         funcs = [
             'aspect_ratio',
             'area',
@@ -113,6 +145,10 @@ class Blob():
             'orientation',
             'perimeter',
             'perimeter_convex_hull',
+            'pixel_intensity_mean',
+            'pixel_intensity_median',
+            'pixel_kurtosis',
+            'pixel_skew',
             'roughness',
             'roundness',
             'solidity'
@@ -144,22 +180,27 @@ def plot_image(blob):
     
     cv.imshow('orig', im)
     cv.imshow('params', im_copy)
-    cv.imshow('masked', blob.image_original_masked)
+    cv.imshow('masked', blob.image_masked)
     cv.waitKey()
     
 def main():
     im = cv.imread("ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
-    ret, im_thresh = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
+    ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(im, contour)
-    blob.zproperties(2)
-    plot_image(blob)
+    blob.print_properties(2)
+    print(blob.pixel_intensity_at_percent(75))
+    #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
+    
+    cv.imshow('masked', blob.image_masked)
+    plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
+    cv.waitKey()
     
 
 
