@@ -11,11 +11,7 @@ class Blob():
     def __init__(self, image, contour):
         self.image = image
         self.contour = contour
-        self.mask = np.zeros(self.image.shape[0:2], np.uint8)
-        cv.fillPoly(self.mask, pts=[contour], color=(255, 255, 255))
-        self.label_img = label(self.mask)
-        self.region = regionprops(self.label_img)[0]
-    
+
     @property
     def aspect_ratio(self):
         return self.axis_major_length / self.axis_minor_length
@@ -46,7 +42,7 @@ class Blob():
         perimeter = self.perimeter
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
         return circularity
-        
+
     @property
     def eccentricity(self):
         return self.region.eccentricity
@@ -54,12 +50,18 @@ class Blob():
     @property
     def equivalent_diameter_area(self):
         return self.region.equivalent_diameter_area
-    
+
     @property
     def image_convex_bbox(self):
         im = self.region.image_convex.astype(np.uint8)
         im[im == 1] = 255
         return im
+
+    @property
+    def image_mask(self):
+        mask = np.zeros(self.image.shape[0:2], np.uint8)
+        cv.fillPoly(mask, pts=[self.contour], color=(255, 255, 255))
+        return mask
 
     @property
     def image_mask_bbox(self):
@@ -72,50 +74,56 @@ class Blob():
         '''Original image with mask'''
         return cv.bitwise_and(self.image,
                               self.image,
-                              mask=self.mask)
+                              mask=self.image_mask)
 
     @property
     def orientation(self):
         return self.region.orientation
-    
+
     @property
     def perimeter(self):
         return self.region.perimeter
-    
+
     @property
     def perimeter_convex_hull(self):
         convex_label = label(self.image_convex_bbox)
         convex_perimeter = regionprops(convex_label)[0]['perimeter']
         return convex_perimeter
-    
+
     @property
     def pixel_intensities(self):
-        coords = np.where(self.mask == 255)
+        coords = np.where(self.image_mask == 255)
         if len(self.image.shape) >= 3:
             image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
             return image_gray[coords]
         return self.image[coords]
-    
+
     @property
     def pixel_intensity_mean(self):
         return np.mean(self.pixel_intensities)
-    
+
     @property
     def pixel_intensity_median(self):
         return np.median(self.pixel_intensities)
-    
+
     @property
     def pixel_intensity_std(self):
         return np.std(self.pixel_intensities)
-    
+
     @property
     def pixel_kurtosis(self):
         return kurtosis(self.pixel_intensities, fisher=True, bias=False)
-    
+
     @property
     def pixel_skew(self):
         return skew(self.pixel_intensities, bias=False, nan_policy='omit')
-            
+
+    @property
+    def region(self):
+        label_img = label(self.image_mask)
+        region = regionprops(label_img)[0]
+        return region
+
     @property
     def roughness(self):
         return self.perimeter / self.perimeter_convex_hull
@@ -129,12 +137,12 @@ class Blob():
     @property
     def solidity(self):
         return self.region.solidity
-    
+
     def pixel_intensity_percentile(self, percentile=75):
         pixel_sort = np.sort(self.pixel_intensities)
         idx = int(percentile/100*len(pixel_sort))
         return pixel_sort[idx]
-    
+
     def print_properties(self, dec=2):
         funcs = [
             'aspect_ratio',
@@ -163,6 +171,7 @@ class Blob():
             val = eval('self.' + funcs[i])
             print(funcs[i] + ': ' + str(np.around(val, dec)))
 
+
 def plot_image(blob):
     y0, x0 = blob.centroid
     y0 = int(y0)
@@ -182,7 +191,6 @@ def plot_image(blob):
     cv.line(im_copy, (x0, y0), (x0-(x2-x0), y0-(y2-y0)), (0,0,255), 2)
     cv.circle(im_copy, (x0, y0), 2, (0,255,0), 2)
     cv.drawContours(im_copy, blob.contour, -1, (255,0,0), 2, cv.LINE_8)
-    
     cv.imshow('orig', im)
     cv.imshow('params', im_copy)
     cv.imshow('masked', blob.image_masked)
@@ -197,15 +205,15 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(im, contour)
     blob.print_properties(2)
-    #plot_image(blob)
+    plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
-    
+    '''
     cv.imshow('masked', blob.image_masked)
     plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
     cv.waitKey()
-    
+    '''
 
 
 if __name__ == '__main__':
