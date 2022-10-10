@@ -105,6 +105,10 @@ class Blob():
         return np.median(self.pixel_intensities)
     
     @property
+    def pixel_intensity_std(self):
+        return np.std(self.pixel_intensities)
+    
+    @property
     def pixel_kurtosis(self):
         return kurtosis(self.pixel_intensities, fisher=True, bias=False)
     
@@ -147,6 +151,7 @@ class Blob():
             'perimeter_convex_hull',
             'pixel_intensity_mean',
             'pixel_intensity_median',
+            'pixel_intensity_std',
             'pixel_kurtosis',
             'pixel_skew',
             'roughness',
@@ -187,7 +192,7 @@ def main():
     im = cv.imread("ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
-    ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
+    ret, im_thresh = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(im, contour)
