@@ -20,7 +20,7 @@ class Blob():
     def area(self):
         return self.region.area_filled
 
-    def area_convex(self):
+    def area_convex_hull(self):
         return self.region.area_convex
 
     def axis_major_length(self):
@@ -65,6 +65,14 @@ class Blob():
     def perimeter(self):
         return self.region.perimeter
     
+    def perimeter_convex_hull(self):
+        convex_label = label(self.image_convex())
+        convex_perimeter = regionprops(convex_label)[0]['perimeter']
+        return convex_perimeter
+    
+    def roughness(self):
+        return self.perimeter() / self.perimeter_convex_hull()
+
     def roundness(self):
         num = 4 * self.area()
         den = math.pi * pow(self.axis_major_length(), 2)
@@ -77,7 +85,7 @@ class Blob():
         funcs = [
             'aspect_ratio',
             'area',
-            'area_convex',
+            'area_convex_hull',
             'axis_major_length',
             'axis_minor_length',
             'centroid',
@@ -86,6 +94,8 @@ class Blob():
             'equivalent_diameter_area',
             'orientation',
             'perimeter',
+            'perimeter_convex_hull',
+            'roughness',
             'roundness',
             'solidity',
             ]
@@ -118,6 +128,7 @@ def plot_image(blob):
     cv.imshow('params', im_copy)
     cv.imshow('masked', blob.image_original_masked())
     cv.waitKey()
+    
 
 def main():
     im = cv.imread("ex3.tif")
@@ -128,7 +139,6 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(im, contour)
     blob.zproperties(2)
-    
     plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
