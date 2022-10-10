@@ -126,9 +126,9 @@ class Blob():
     def solidity(self):
         return self.region.solidity
     
-    def pixel_intensity_at_percent(self, percent=75):
+    def pixel_intensity_percentile(self, percentile=75):
         pixel_sort = np.sort(self.pixel_intensities)
-        idx = int(percent/100*len(pixel_sort))
+        idx = int(percentile/100*len(pixel_sort))
         return pixel_sort[idx]
     
     def print_properties(self, dec=2):
@@ -192,7 +192,6 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(im, contour)
     blob.print_properties(2)
-    print(blob.pixel_intensity_at_percent(75))
     #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
