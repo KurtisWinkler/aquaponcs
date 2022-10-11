@@ -33,6 +33,7 @@ class Blob():
         return self.region.axis_minor_length
 
     @property
+    # should switch to return x,y instead of y,x
     def centroid(self):
         return self.region.centroid
 
@@ -43,6 +44,12 @@ class Blob():
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
         return circularity
 
+    @property
+    def coords(self):
+        points = np.where(self.image_mask == 255)
+        coords = [[points[0][i], points[1][i]] for i in range(len(points[0]))]
+        return coords
+    
     @property
     def eccentricity(self):
         return self.region.eccentricity
@@ -82,13 +89,13 @@ class Blob():
 
     @property
     def perimeter(self):
-        return self.region.perimeter
+        return max(self.region.perimeter, 1) #won't equal 0
 
     @property
     def perimeter_convex_hull(self):
         convex_label = label(self.image_convex_bbox)
         convex_perimeter = regionprops(convex_label)[0]['perimeter']
-        return convex_perimeter
+        return max(convex_perimeter, 1)
 
     @property
     def pixel_intensities(self):
@@ -120,6 +127,7 @@ class Blob():
 
     @property
     def region(self):
+        '''blob inherits regionprops properties from scikit class'''
         label_img = label(self.image_mask)
         region = regionprops(label_img)[0]
         return region

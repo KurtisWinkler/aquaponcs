@@ -1,71 +1,70 @@
-import cv2 as cv
+import blob_class as bc
+import math
 import numpy as np
+import cv2 as cv
+from matplotlib import pyplot as plt
+from skimage.feature import peak_local_max
 
-# Read image
-im = cv.imread("ex11.tif")
+def points_in_contour(key_list, contour):
+    #keys_found = [key for key in key_list if key in main_list]
+    keys_found = []
+    for key in key_list:
+        if cv.pointPolygonTest(np.array(contour), (int(key[0]),int(key[1])), False) == True:
+            keys_found.append(key)
+    return keys_found, len(keys_found)
 
+im = cv.imread('ex3.tif')
 im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-
-#im_gray = cv.equalizeHist(im_gray) #CREATE ENHANCE CONTRAST FUNCTION
-
-#im_blur = cv.blur(im, (11,11))
 im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
-#cv.imshow('blur', im_blur)
-#cv.imshow('gaussian', im_gaussian)
+'''example mask for finding nuclues -> now to find blobs'''
+ret, im_binary = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
+contours, hierarchy = cv.findContours(im_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+contour = max(contours, key=cv.contourArea)
+blob_blur = bc.Blob(im_blur, contour)
+#im_mask_blur = cv.GaussianBlur(blob.image_masked, (15,15),0)
 
-# Set our filtering parameters
-# Initialize parameter setting using cv.SimpleBlobDetector
-params = cv.SimpleBlobDetector_Params()
+local_max_thresh = blob_blur.pixel_intensity_percentile(80)
+local_max_coords = peak_local_max(blob_blur.image_masked, min_distance=20, threshold_abs=local_max_thresh)
+local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
 
-# Starting, step, and ending pixel threshold
-params.minThreshold = 100
-params.thresholdStep = 10
-params.maxThreshold = 250
+keys, key_num = points_in_contour(local_max_coords, blob_blur.contour)
+'''
+mask2 = np.zeros(im.shape[0:2])
+for i in blob_blur.coords:
+    mask2[i[0]][i[1]] = 255
+cv.imshow('mask1', blob_blur.image_mask)
+cv.imshow('mask2', mask2)
+'''
 
-# min times blob appears in threshold slices
-params.minRepeatability = 3  # default=2
+im_copy = im.copy()
+for coordinate in local_max_coords:
+    cv.circle(im_copy, (coordinate), 2, (0,0,255), 2)
 
-# min pixel length between blob sections to say its same blob
-params.minDistBetweenBlobs = 10
-
-# Set blob Color filtering parameters
-params.filterByColor = True
-params.blobColor = 255
-
-# Set Area filtering parameters
-params.filterByArea = False
-#params.minArea = 100
- 
-# Set Circularity filtering parameters
-params.filterByCircularity = False
-#params.minCircularity = 0.9
- 
-# Set Convexity filtering parameters
-params.filterByConvexity = False
-#params.minConvexity = 0.2
-     
-# Set inertia filtering parameters
-params.filterByInertia = False
-#params.minInertiaRatio = 0.01
-
-# Set up the detector with params
-detector = cv.SimpleBlobDetector_create(params)
-
-# Detect blobs
-keypoints = detector.detect(im_blur)
-#print(keypoints)
-
-# Draw detected blobs as red circles.
-# cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-im_keypoints = cv.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-
-# Show keypoints
-cv.imshow("Original", im)
-cv.imshow("Keypoints", im_keypoints)
-cv.waitKey(0)
-
-
-#For blob area/circularity: get center of each blob, then perform contours in masked area so only blob is found
-#Contours would find slice with largest area and then calculate area and/or circularity
-#maybe use same lower param limit in contour.py, or update circularity to be above square
+min_thresh = int(blob_blur.pixel_intensity_median)
+blob_list = []
+im_contour_copy = im.copy()
+for i in range(min_thresh,255,10):  # add min threshold for image parameter
+    _, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
+    #cv.imshow('binary'+str(i), im_thresh)
+    # Find only the most external contours
+    contours, _ = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    if len(contours) > 0:
+        for j in range(len(contours)):
+            blob = bc.Blob(im, contours[j])
+            keys, key_num = points_in_contour(local_max_coords, blob.contour)
+            #cv.imshow('blob ' + str(i) + str(j), blob.image_mask)
+            if (blob.roughness < 1.1 and  # roughness less than 10%
+                blob.solidity > 0.9 and   # solidity less than 10%
+                key_num == 1):            # blob only contains 1 maxima
+                blob_list.append(blob)  # add blobs to main list
+                #cv.imshow('blob ' + str(i) + str(j), blob.image_masked)
+                cv.drawContours(im_contour_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
+                for k in range(len(keys)):
+                    cv.circle(im_contour_copy, (keys[k]), 2, (0,0,255), 2)
+            
+            
+cv.imshow('original', im)
+cv.imshow('peak local maxima', im_copy)
+cv.imshow('contours', im_contour_copy)
+cv.waitKey()
