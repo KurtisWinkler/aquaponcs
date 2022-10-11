@@ -82,13 +82,13 @@ class Blob():
 
     @property
     def perimeter(self):
-        return self.region.perimeter
+        return max(self.region.perimeter, 1) #won't equal 0
 
     @property
     def perimeter_convex_hull(self):
         convex_label = label(self.image_convex_bbox)
         convex_perimeter = regionprops(convex_label)[0]['perimeter']
-        return convex_perimeter
+        return max(convex_perimeter, 1)
 
     @property
     def pixel_intensities(self):
