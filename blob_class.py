@@ -33,6 +33,7 @@ class Blob():
         return self.region.axis_minor_length
 
     @property
+    # should switch to return x,y instead of y,x
     def centroid(self):
         return self.region.centroid
 
@@ -46,7 +47,7 @@ class Blob():
     @property
     def coords(self):
         points = np.where(self.image_mask == 255)
-        coords = np.array([[points[0][i], points[1][i]] for i in range(len(points[0]))])
+        coords = [[points[0][i], points[1][i]] for i in range(len(points[0]))]
         return coords
     
     @property
