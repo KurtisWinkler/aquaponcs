@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 class Blob():
 
-    def __init__(self, image, contour):
-        self.image = image
+    def __init__(self, contour, image):
         self.contour = contour
+        self.image = image
 
     @property
     def aspect_ratio(self):
@@ -100,7 +100,7 @@ class Blob():
     @property
     def pixel_intensities(self):
         coords = np.where(self.image_mask == 255)
-        if len(self.image.shape) >= 3:
+        if self.image.ndim > 2:
             image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
             return image_gray[coords]
         return self.image[coords]
@@ -211,7 +211,7 @@ def main():
     ret, im_thresh = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
-    blob = Blob(im, contour)
+    blob = Blob(contour, im)
     blob.print_properties(2)
     plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
