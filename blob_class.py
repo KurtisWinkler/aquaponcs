@@ -44,6 +44,12 @@ class Blob():
         return circularity
 
     @property
+    def coords(self):
+        points = np.where(self.image_mask == 255)
+        coords = np.array([[points[0][i], points[1][i]] for i in range(len(points[0]))])
+        return coords
+    
+    @property
     def eccentricity(self):
         return self.region.eccentricity
 
