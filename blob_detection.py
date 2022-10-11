@@ -8,12 +8,14 @@ from skimage.feature import peak_local_max
 def points_in_contour(key_list, contour):
     #keys_found = [key for key in key_list if key in main_list]
     keys_found = []
-    for key in key_list:
-        if cv.pointPolygonTest(np.array(contour), (int(key[0]),int(key[1])), False) == True:
-            keys_found.append(key)
-    return keys_found, len(keys_found)
+    keys_idx = []
+    for i in range(len(key_list)):
+        if cv.pointPolygonTest(np.array(contour), (int(key_list[i][0]),int(key_list[i][1])), False) == True:
+            keys_found.append(key_list[i])
+            keys_idx.append(i)
+    return keys_found, len(keys_found), keys_idx
 
-im = cv.imread('ex11.tif')
+im = cv.imread('ex3.tif')
 im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
@@ -28,7 +30,8 @@ local_max_thresh = blob_blur.pixel_intensity_percentile(80)
 local_max_coords = peak_local_max(blob_blur.image_masked, min_distance=20, threshold_abs=local_max_thresh)
 local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
 
-keys, key_num = points_in_contour(local_max_coords, blob_blur.contour)
+keys, key_num, key_idx = points_in_contour(local_max_coords, blob_blur.contour)
+print(keys)
 '''
 mask2 = np.zeros(im.shape[0:2])
 for i in blob_blur.coords:
@@ -52,7 +55,7 @@ for i in range(min_thresh,255,10):  # add min threshold for image parameter
     if len(contours) > 0:
         for j in range(len(contours)):
             blob = bc.Blob(contours[j], im)
-            keys, key_num = points_in_contour(local_max_coords, blob.contour)
+            keys, key_num, key_idx = points_in_contour(local_max_coords, blob.contour)
             #cv.imshow('blob ' + str(i) + str(j), blob.image_mask)
             if (blob.roughness < 1.1 and  # roughness less than 10%
                 blob.solidity > 0.9 and   # solidity less than 10%
