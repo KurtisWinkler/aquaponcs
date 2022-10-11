@@ -5,6 +5,14 @@ import cv2 as cv
 from matplotlib import pyplot as plt
 from skimage.feature import peak_local_max
 
+def points_in_contour(key_list, contour):
+    #keys_found = [key for key in key_list if key in main_list]
+    keys_found = []
+    for key in key_list:
+        if cv.pointPolygonTest(np.array(contour), (int(key[0]),int(key[1])), False) == True:
+            keys_found.append(key)
+    return keys_found, len(keys_found)
+
 im = cv.imread('ex3.tif')
 im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 im_blur = cv.GaussianBlur(im_gray,(15,15),0)
@@ -18,10 +26,20 @@ blob_blur = bc.Blob(im_blur, contour)
 
 local_max_thresh = blob_blur.pixel_intensity_percentile(80)
 local_max_coords = peak_local_max(blob_blur.image_masked, min_distance=20, threshold_abs=local_max_thresh)
+local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
+
+keys, key_num = points_in_contour(local_max_coords, blob_blur.contour)
+'''
+mask2 = np.zeros(im.shape[0:2])
+for i in blob_blur.coords:
+    mask2[i[0]][i[1]] = 255
+cv.imshow('mask1', blob_blur.image_mask)
+cv.imshow('mask2', mask2)
+'''
 
 im_copy = im.copy()
 for coordinate in local_max_coords:
-    cv.circle(im_copy, (coordinate[1],coordinate[0]), 2, (0,255,0), 2)
+    cv.circle(im_copy, (coordinate), 2, (0,0,255), 2)
 
 min_thresh = int(blob_blur.pixel_intensity_median)
 blob_list = []
@@ -34,16 +52,19 @@ for i in range(min_thresh,255,10):  # add min threshold for image parameter
     if len(contours) > 0:
         for j in range(len(contours)):
             blob = bc.Blob(im, contours[j])
-            if (blob.roughness < 1.1 and
-                blob.solidity > 0.9):
+            keys, key_num = points_in_contour(local_max_coords, blob.contour)
+            #cv.imshow('blob ' + str(i) + str(j), blob.image_mask)
+            if (blob.roughness < 1.1 and  # roughness less than 10%
+                blob.solidity > 0.9 and   # solidity less than 10%
+                key_num == 1):            # blob only contains 1 maxima
                 blob_list.append(blob)  # add blobs to main list
                 #cv.imshow('blob ' + str(i) + str(j), blob.image_masked)
                 cv.drawContours(im_contour_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
+                for k in range(len(keys)):
+                    cv.circle(im_contour_copy, (keys[k]), 2, (0,0,255), 2)
             
             
-'''
+cv.imshow('original', im)
 cv.imshow('peak local maxima', im_copy)
-cv.imshow('blob with mask', blob_blur.image_masked)
-'''
 cv.imshow('contours', im_contour_copy)
 cv.waitKey()
