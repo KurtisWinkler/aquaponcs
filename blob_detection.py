@@ -13,7 +13,7 @@ def points_in_contour(key_list, contour):
             keys_found.append(key)
     return keys_found, len(keys_found)
 
-im = cv.imread('ex3.tif')
+im = cv.imread('ex11.tif')
 im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
@@ -21,7 +21,7 @@ im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 ret, im_binary = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
 contours, hierarchy = cv.findContours(im_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
 contour = max(contours, key=cv.contourArea)
-blob_blur = bc.Blob(im_blur, contour)
+blob_blur = bc.Blob(contour, im_blur)
 #im_mask_blur = cv.GaussianBlur(blob.image_masked, (15,15),0)
 
 local_max_thresh = blob_blur.pixel_intensity_percentile(80)
@@ -51,7 +51,7 @@ for i in range(min_thresh,255,10):  # add min threshold for image parameter
     contours, _ = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     if len(contours) > 0:
         for j in range(len(contours)):
-            blob = bc.Blob(im, contours[j])
+            blob = bc.Blob(contours[j], im)
             keys, key_num = points_in_contour(local_max_coords, blob.contour)
             #cv.imshow('blob ' + str(i) + str(j), blob.image_mask)
             if (blob.roughness < 1.1 and  # roughness less than 10%
