@@ -120,6 +120,7 @@ class Blob():
 
     @property
     def region(self):
+        '''blob inherits regionprops properties from scikit class'''
         label_img = label(self.image_mask)
         region = regionprops(label_img)[0]
         return region
