@@ -84,17 +84,21 @@ class Blob():
                               mask=self.image_mask)
 
     @property
+    def moments(self):
+        return self.region.moments
+    
+    @property
     def orientation(self):
         return self.region.orientation
 
     @property
     def perimeter(self):
-        return max(self.region.perimeter, 1) #won't equal 0
+        return max(self.region.perimeter_crofton, 1) #won't equal 0
 
     @property
     def perimeter_convex_hull(self):
         convex_label = label(self.image_convex_bbox)
-        convex_perimeter = regionprops(convex_label)[0]['perimeter']
+        convex_perimeter = regionprops(convex_label)[0]['perimeter_crofton']
         return max(convex_perimeter, 1)
 
     @property
@@ -230,6 +234,7 @@ def main():
     plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
     cv.waitKey()
     '''
-
+    print(blob.area)
+    
 if __name__ == '__main__':
     main()
