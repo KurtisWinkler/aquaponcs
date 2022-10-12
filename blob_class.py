@@ -133,8 +133,15 @@ class Blob():
         return region
 
     @property
-    def roughness(self):
+    def roughness_perimeter(self):
         return self.perimeter / self.perimeter_convex_hull
+    
+    @property
+    def roughness_surface(self):
+        pixels = self.pixel_intensities
+        mean = self.pixel_intensity_mean
+        diff = [abs(px-mean) for px in pixels]
+        return sum(diff)/len(diff)
 
     @property
     def roundness(self):
@@ -170,7 +177,8 @@ class Blob():
             'pixel_intensity_std',
             'pixel_kurtosis',
             'pixel_skew',
-            'roughness',
+            'roughness_perimeter',
+            'roughness_surface',
             'roundness',
             'solidity'
             ]
@@ -213,7 +221,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
-    plot_image(blob)
+    #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
@@ -222,7 +230,6 @@ def main():
     plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
     cv.waitKey()
     '''
-
 
 if __name__ == '__main__':
     main()
