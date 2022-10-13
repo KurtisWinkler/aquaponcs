@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 class Blob():
 
-    def __init__(self, image, contour):
-        self.image = image
+    def __init__(self, contour, image):
         self.contour = contour
+        self.image = image
 
     @property
     def aspect_ratio(self):
@@ -84,23 +84,27 @@ class Blob():
                               mask=self.image_mask)
 
     @property
+    def moments(self):
+        return self.region.moments
+    
+    @property
     def orientation(self):
         return self.region.orientation
 
     @property
     def perimeter(self):
-        return max(self.region.perimeter, 1) #won't equal 0
+        return max(self.region.perimeter_crofton, 1) #won't equal 0
 
     @property
     def perimeter_convex_hull(self):
         convex_label = label(self.image_convex_bbox)
-        convex_perimeter = regionprops(convex_label)[0]['perimeter']
+        convex_perimeter = regionprops(convex_label)[0]['perimeter_crofton']
         return max(convex_perimeter, 1)
 
     @property
     def pixel_intensities(self):
         coords = np.where(self.image_mask == 255)
-        if len(self.image.shape) >= 3:
+        if self.image.ndim > 2:
             image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
             return image_gray[coords]
         return self.image[coords]
@@ -133,8 +137,15 @@ class Blob():
         return region
 
     @property
-    def roughness(self):
+    def roughness_perimeter(self):
         return self.perimeter / self.perimeter_convex_hull
+    
+    @property
+    def roughness_surface(self):
+        pixels = self.pixel_intensities
+        mean = self.pixel_intensity_mean
+        diff = [abs(px-mean) for px in pixels]
+        return sum(diff)/len(diff)
 
     @property
     def roundness(self):
@@ -170,7 +181,8 @@ class Blob():
             'pixel_intensity_std',
             'pixel_kurtosis',
             'pixel_skew',
-            'roughness',
+            'roughness_perimeter',
+            'roughness_surface',
             'roundness',
             'solidity'
             ]
@@ -211,9 +223,9 @@ def main():
     ret, im_thresh = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
-    blob = Blob(im, contour)
+    blob = Blob(contour, im)
     blob.print_properties(2)
-    plot_image(blob)
+    #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
@@ -222,7 +234,7 @@ def main():
     plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
     cv.waitKey()
     '''
-
-
+    print(blob.area)
+    
 if __name__ == '__main__':
     main()

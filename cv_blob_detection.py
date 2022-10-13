@@ -9,7 +9,7 @@ im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 #im_gray = cv.equalizeHist(im_gray) #CREATE ENHANCE CONTRAST FUNCTION
 
 #im_blur = cv.blur(im, (11,11))
-im_blur = cv.GaussianBlur(im_gray,(15,15),0)
+im_blur = cv.GaussianBlur(im_gray, (15, 15), 0)
 
 #cv.imshow('blur', im_blur)
 #cv.imshow('gaussian', im_gaussian)
@@ -19,12 +19,12 @@ im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 params = cv.SimpleBlobDetector_Params()
 
 # Starting, step, and ending pixel threshold
-params.minThreshold = 100
+params.minThreshold = 30
 params.thresholdStep = 10
 params.maxThreshold = 250
 
 # min times blob appears in threshold slices
-params.minRepeatability = 3  # default=2
+params.minRepeatability = 2  # default=2
 
 # min pixel length between blob sections to say its same blob
 params.minDistBetweenBlobs = 10
@@ -34,17 +34,17 @@ params.filterByColor = True
 params.blobColor = 255
 
 # Set Area filtering parameters
-params.filterByArea = False
-#params.minArea = 100
- 
+params.filterByArea = True
+params.minArea = 20 # 93 is 0.1% mask size of ex11.tif
+
 # Set Circularity filtering parameters
-params.filterByCircularity = False
-#params.minCircularity = 0.9
- 
+params.filterByCircularity = True
+params.minCircularity = 0.5
+
 # Set Convexity filtering parameters
-params.filterByConvexity = False
-#params.minConvexity = 0.2
-     
+params.filterByConvexity = True
+params.minConvexity = 0.8
+
 # Set inertia filtering parameters
 params.filterByInertia = False
 #params.minInertiaRatio = 0.01
@@ -62,6 +62,7 @@ im_keypoints = cv.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv.DRAW_
 
 # Show keypoints
 cv.imshow("Original", im)
+#cv.imshow('Blur', im_blur)
 cv.imshow("Keypoints", im_keypoints)
 cv.waitKey(0)
 
