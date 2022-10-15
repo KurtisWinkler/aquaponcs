@@ -140,8 +140,8 @@ class Blob():
     @property
     def roughness_perimeter(self):
         roughness = self.perimeter / self.perimeter_convex_hull
-        # perimeter roughness cannot be above 1 (roudning errors)
-        return min(roughness, 1)
+        # perimeter roughness cannot be less than 1 (rounding errors)
+        return max(roughness, 1)
     
     @property
     def roughness_surface(self):
