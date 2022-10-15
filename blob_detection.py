@@ -46,7 +46,7 @@ def blob_scores(blob_list):
     score_roughness_perimeter = [(1/blob.roughness_perimeter) / max_roughness_perimeter for blob in blob_list]
     score_solidity = [blob.solidity / max_solidity for blob in blob_list]
     
-    score_circularity = np.multiply(score_circularity, 100)
+    score_circularity = np.multiply(score_circularity, 10)
     score_roughness_perimeter = np.multiply(score_roughness_perimeter, 5)
     score_solidity = np.multiply(score_solidity, 5)
     
@@ -60,7 +60,7 @@ def blob_scores(blob_list):
     '''
     return scores
 
-im = cv.imread('ex111.tif')
+im = cv.imread('ex3.tif')
 im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
