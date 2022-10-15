@@ -118,50 +118,8 @@ for blob_inner_list in blob_list:
         max_value = max(scores)
         max_index = scores.index(max_value)
         cv.drawContours(im_contour_copy, blob_inner_list[max_index].contour, -1, (0, 255, 0), 2, cv.LINE_8)
-    
-'''
-blob_skew_list = [[] for i in range(len(blob_list))]
-min_skew_idx = []
 
-for i in range(len(blob_list)):
-    for blob in blob_list[i]:
-        blob_skew_list[i].append(abs(blob.pixel_skew))
-min_skew_list = [min(blob_skew_list[i]) 
-                 if len(blob_skew_list[i]) > 0 else -1 for i in range(len(blob_skew_list))]
 
-min_skew_idx = [blob_skew_list[i].index(min_skew_list[i]) 
-                if min_skew_list[i] >= 0 else -1 for i in range(len(blob_skew_list))]
-
-for i in range(len(blob_list)):
-    if min_skew_idx[i] != -1:
-        blob = blob_list[i][min_skew_idx[i]]
-        cv.drawContours(im_contour_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
-'''
-'''
-area = [[] for i in range(len(blob_list))]
-perimeter = [[] for i in range(len(blob_list))]
-circ = [[] for i in range(len(blob_list))]
-rough_perim = [[] for i in range(len(blob_list))]
-rough_surf = [[] for i in range(len(blob_list))]
-skew_list = [[] for i in range(len(blob_list))]
-kurt_list = [[] for i in range(len(blob_list))]
-for i in range(len(blob_list)):
-    for blob in blob_list[i]:
-        area[i].append(blob.area)
-        perimeter[i].append(blob.perimeter)
-        circ[i].append(blob.circularity)
-        skew_list[i].append(blob.pixel_skew)
-        kurt_list[i].append(blob.pixel_kurtosis)
-        rough_perim[i].append(blob.roughness_perimeter)
-        rough_surf[i].append(blob.roughness_surface)
-    print('area' + str(area[i]))
-#    print('perimeter' + str(perimeter[i]))
-    print('circ' + str(circ[i]))
-#    print('skew' + str(skew_list[i]))
-#    print('kurt' + str(kurt_list[i]))
-    print('rough_perim' + str(rough_perim[i]))
-#    print('rough_surf' + str(rough_surf[i]))
-'''
 #for blob in blob_list[1]:
 #    cv.drawContours(im_contour_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
 
