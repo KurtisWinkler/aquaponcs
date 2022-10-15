@@ -42,7 +42,8 @@ class Blob():
         area = self.area
         perimeter = self.perimeter
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
-        return circularity
+        # cannot have circularity above 1 (rounding errors can cause this)
+        return min(circularity, 1)
 
     @property
     def coords(self):
@@ -138,7 +139,9 @@ class Blob():
 
     @property
     def roughness_perimeter(self):
-        return self.perimeter / self.perimeter_convex_hull
+        roughness = self.perimeter / self.perimeter_convex_hull
+        # perimeter roughness cannot be above 1 (roudning errors)
+        return min(roughness, 1)
     
     @property
     def roughness_surface(self):
@@ -225,7 +228,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
-    #plot_image(blob)
+    plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
