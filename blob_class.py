@@ -33,16 +33,18 @@ class Blob():
         return self.region.axis_minor_length
 
     @property
-    # should switch to return x,y instead of y,x
     def centroid(self):
-        return self.region.centroid
+        centroid = self.region.centroid
+        # return x,y instead of default y,x
+        return centroid[1], centroid[0]
 
     @property
     def circularity(self):
         area = self.area
         perimeter = self.perimeter
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
-        return circularity
+        # cannot have circularity above 1 (rounding errors can cause this)
+        return min(circularity, 1)
 
     @property
     def coords(self):
@@ -138,7 +140,9 @@ class Blob():
 
     @property
     def roughness_perimeter(self):
-        return self.perimeter / self.perimeter_convex_hull
+        roughness = self.perimeter / self.perimeter_convex_hull
+        # perimeter roughness cannot be less than 1 (rounding errors)
+        return max(roughness, 1)
     
     @property
     def roughness_surface(self):
@@ -193,7 +197,7 @@ class Blob():
 
 
 def plot_image(blob):
-    y0, x0 = blob.centroid
+    x0, y0 = blob.centroid
     y0 = int(y0)
     x0 = int(x0)
     orientation = blob.orientation
@@ -225,7 +229,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
-    #plot_image(blob)
+    plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
