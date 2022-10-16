@@ -33,9 +33,10 @@ class Blob():
         return self.region.axis_minor_length
 
     @property
-    # should switch to return x,y instead of y,x
     def centroid(self):
-        return self.region.centroid
+        centroid = self.region.centroid
+        # return x,y instead of default y,x
+        return centroid[1], centroid[0]
 
     @property
     def circularity(self):
@@ -196,7 +197,7 @@ class Blob():
 
 
 def plot_image(blob):
-    y0, x0 = blob.centroid
+    x0, y0 = blob.centroid
     y0 = int(y0)
     x0 = int(x0)
     orientation = blob.orientation
