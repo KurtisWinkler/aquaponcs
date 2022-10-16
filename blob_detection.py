@@ -5,16 +5,19 @@ import cv2 as cv
 from matplotlib import pyplot as plt
 from skimage.feature import peak_local_max
 
-def points_in_contour(key_list, contour):
-    keys_found = []
-    keys_idx = []
-    for i in range(len(key_list)):
-        if cv.pointPolygonTest(np.array(contour), (int(key_list[i][0]),int(key_list[i][1])), False) == True:
-            keys_found.append(key_list[i])
-            keys_idx.append(i)
-    if len(keys_found) == 1:
-        return keys_found[0], len(keys_found), keys_idx[0]
-    return keys_found, len(keys_found), keys_idx
+
+def contour_maxima(contour, local_maxima):
+    ''' returns maxima inside the contour if the contour
+        only contains 1 maxima'''
+    points = [cv.pointPolygonTest(np.array(contour), (int(maxima[0]), int(maxima[1])), False) for maxima in local_maxima]
+    
+    if points.count(True) == 1:
+        idx = points.index(True)
+        maxima = local_maxima[idx]
+        return maxima, idx
+    
+    return None, None
+
 
 def blob_filter(blob, filters):
     ''' filters is a nested list: each inner list contains the 
@@ -30,6 +33,7 @@ def blob_filter(blob, filters):
                 return False
 
     return True
+
 
 def blob_scores(blob_list):
     '''spits out a score for each blob in a list'''
@@ -75,8 +79,6 @@ local_max_thresh = blob_blur.pixel_intensity_percentile(80)
 local_max_coords = peak_local_max(blob_blur.image_masked, min_distance=20, threshold_abs=local_max_thresh)
 local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
 
-keys, key_num, key_idx = points_in_contour(local_max_coords, blob_blur.contour)
-
 '''
 mask2 = np.zeros(im.shape[0:2])
 for i in blob_blur.coords:
@@ -104,9 +106,9 @@ for i in range(min_thresh,255,10):  # add min threshold for image parameter
     if len(contours) > 0:
         for j in range(len(contours)):
             blob = bc.Blob(contours[j], im)
-            key, key_num, key_idx = points_in_contour(local_max_coords, blob.contour)
+            key, key_idx = contour_maxima(blob.contour, local_max_coords)
             #cv.imshow('blob ' + str(i) + str(j), blob.image_mask)
-            if (key_num == 1 and blob_filter(blob,filters)):            # blob only contains 1 maxima
+            if key and blob_filter(blob,filters):            # blob only contains 1 maxima
                 blob_list[key_idx].append(blob)  # add blobs to main list based on maxima
                 #cv.imshow('blob ' + str(i) + str(j), blob.image_masked)
                 cv.drawContours(im_contours_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
