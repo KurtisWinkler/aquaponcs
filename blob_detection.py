@@ -10,12 +10,12 @@ def contour_maxima(contour, local_maxima):
     ''' returns maxima inside the contour if the contour
         only contains 1 maxima'''
     points = [cv.pointPolygonTest(np.array(contour), (int(maxima[0]), int(maxima[1])), False) for maxima in local_maxima]
-    
+
     if points.count(True) == 1:
         idx = points.index(True)
         maxima = local_maxima[idx]
         return maxima, idx
-    
+
     return None, None
 
 
@@ -23,7 +23,7 @@ def blob_filter(blob, filters):
     ''' filters is a nested list: each inner list contains the 
         parameter as first index, min value as 2nd index, and max value as 3rd index '''
     for filt in filters:
-        
+
         if filt[1]:
             if not (eval('blob.' + filt[0]) >= filt[1]):
                 return False
@@ -49,11 +49,11 @@ def blob_scores(blob_list):
     score_circularity = [blob.circularity / max_circularity for blob in blob_list]
     score_roughness_perimeter = [(1/blob.roughness_perimeter) / max_roughness_perimeter for blob in blob_list]
     score_solidity = [blob.solidity / max_solidity for blob in blob_list]
-    
+
     score_circularity = np.multiply(score_circularity, 10)
     score_roughness_perimeter = np.multiply(score_roughness_perimeter, 5)
     score_solidity = np.multiply(score_solidity, 5)
-    
+
     scores = [sum(i) for i in zip(score_area, score_circularity, score_roughness_perimeter, score_solidity)]
     '''
     print('area' + str(score_area))
@@ -79,21 +79,15 @@ local_max_thresh = blob_blur.pixel_intensity_percentile(80)
 local_max_coords = peak_local_max(blob_blur.image_masked, min_distance=20, threshold_abs=local_max_thresh)
 local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
 
-'''
-mask2 = np.zeros(im.shape[0:2])
-for i in blob_blur.coords:
-    mask2[i[0]][i[1]] = 255
-cv.imshow('mask1', blob_blur.image_mask)
-cv.imshow('mask2', mask2)
-'''
-
 im_copy = im.copy()
 for coordinate in local_max_coords:
     cv.circle(im_copy, (coordinate), 2, (0,0,255), 2)
+
 filters = [['roughness_perimeter', None, 1.05],
            ['solidity', 0.95, None],
            ['area', 50, None],
            ['circularity', 0.9, None]]
+
 min_thresh = int(blob_blur.pixel_intensity_median)
 blob_list = [[] for i in range(len(local_max_coords))]
 im_contours_copy = im.copy()
