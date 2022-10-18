@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 import math
-from skimage.measure import label, regionprops
+from skimage.measure import label, regionprops, EllipseModel
 from scipy.stats import skew, kurtosis
 import matplotlib.pyplot as plt
 
@@ -56,6 +56,28 @@ class Blob():
     def eccentricity(self):
         return self.region.eccentricity
 
+    @property
+    def ellipse_fit_mean_residual(self):
+        ''' Fits the contour to an ellipse, then returns the mean
+            residuals (shortest distance of contour point to 
+            ellipse model)
+            
+            This estimates how well the contour fits an ellipse model
+            '''
+        
+        contour = self.contour
+        # remove innner list of contour for input to ellipseModel
+        contour = np.array([contour[i][0] for i in range(len(contour))])
+        
+        ellipse = EllipseModel()
+
+        # Estimate needed to get params for ellipse, returns True if succeeds
+        if ellipse.estimate(contour):
+            residuals = ellipse.residuals(contour)
+            return np.mean(residuals)
+        else:
+            return math.inf
+    
     @property
     def equivalent_diameter_area(self):
         return self.region.equivalent_diameter_area
@@ -176,6 +198,7 @@ class Blob():
             'centroid',
             'circularity',
             'eccentricity',
+            'ellipse_fit_mean_residual',
             'equivalent_diameter_area',
             'orientation',
             'perimeter',
@@ -229,7 +252,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
-    plot_image(blob)
+    #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
@@ -238,7 +261,6 @@ def main():
     plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
     cv.waitKey()
     '''
-    print(blob.area)
     
 if __name__ == '__main__':
     main()
