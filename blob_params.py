@@ -15,6 +15,28 @@ def get_circularity(contour):
     circularity = (4 * math.pi * area) / pow(perimeter, 2)
     return circularity
 
+
+def get_solidity(contour):
+    M = cv.moments(contour)
+    area = M['m00']
+    hull = cv.convexHull(contour)
+    hull_area = cv.contourArea(hull)
+    solidity = float(area)/hull_area
+    return solidity
+
+def get_aspectRatio(contour):
+    (x,y),(MA,ma),angle = cv.fitEllipse(contour)
+    aspect_ratio = float(ma)/MA
+    return aspect_ratio
+
+def get_roundness(contour):
+    M = cv.moments(contour)
+    area = M['m00']
+    (x,y),(MA,ma),angle = cv.fitEllipse(contour)
+    roundness = (4 * area)/(math.pi * pow(ma, 2))
+    return roundness
+
+
 def main(): #FOR TESTING
     # CREATE CONTOURS
     im = cv.imread("ex3.tif")
@@ -29,12 +51,19 @@ def main(): #FOR TESTING
     contour_perimeter = cv.arcLength(contour, True)
     contour_circularity = get_circularity(contour)
     cx, cy = get_center(contour)
+    contour_solidity = get_solidity(contour)
+    contour_ratio = get_aspectRatio(contour)
+    roundness = get_roundness(contour)
 
     # PRINT VALUES
     print('Contour Area: ' + str(contour_area))
     print('Contour Perimeter: ' + str(round(contour_perimeter,1)))
     print('Contour Circularity: ' + str(round(contour_circularity,3)))
     print('Contour Center: (' + str(cx) + ',' + str(cy) + ')')
+    print('Contour Solidity: ' + str(round(contour_solidity,3)))
+    print('Contour Aspect Ratio: ' + str(round(contour_ratio,3)))
+    print('Contour Roundness: ' + str(round(roundness,3)))
+    
     
     # DRAW/DISPLAY IMAGES
     im_copy = im.copy()
