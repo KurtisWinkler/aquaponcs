@@ -53,6 +53,37 @@ class Blob():
         return coords
     
     @property
+    def curvature(self, num=5):
+        
+        def gradient_spaced(L,num):
+            grad = np.array([(L[i+num] - L[i-num])/(num*2) for i in range(-num,len(L)-num)])
+            # reorder matrix to correct indices
+            grad = np.append(grad[num:], grad[0:num])
+            return grad
+        
+        contour = self.contour[:,0]
+        
+        dx_dt = gradient_spaced(contour[:, 0], num)
+        dy_dt = gradient_spaced(contour[:, 1], num)
+
+        # velocity
+        vel = np.array([[dx_dt[i], dy_dt[i]] for i in range(dx_dt.size)])
+
+        # speed
+        ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
+
+        # unit tangent vector
+        tangent = np.array([1/ds_dt] * 2).transpose() * vel
+
+        d2s_dt2 = gradient_spaced(ds_dt, num)
+        d2x_dt2 = gradient_spaced(dx_dt, num)
+        d2y_dt2 = gradient_spaced(dy_dt, num)
+
+        curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
+        
+        return curvature
+    
+    @property
     def eccentricity(self):
         return self.region.eccentricity
 
@@ -251,7 +282,9 @@ def main():
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
-    blob.print_properties(2)
+    print('mean: ' + str(np.mean(blob.curvature)))
+    print('std: ' + str(np.std(blob.curvature)))
+    #blob.print_properties(2)
     #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
