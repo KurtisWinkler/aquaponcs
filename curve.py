@@ -3,18 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def gradient_spaced(L,num):
-    grad = np.array([(L[i+num] - L[i-num])/(num*2) for i in range(num,len(L)-num)])
-    grad = np.insert(grad, 0, np.ones(num), axis=0)
-    grad = np.append(grad, np.ones(num), axis=0)
+    grad = np.array([(L[i+num] - L[i-num])/(num*2) for i in range(-num,len(L)-num)])
+    # reorder matrix to correct indices
+    grad = np.append(grad[num:], grad[0:num])
     return grad
 
 def curvature(contour, num):
-
-    # because closed contour, add first/last 2 elements for accurate np gradient calculations
-    first = contour[0:num*2]
-    last = contour[-num*2:]
-    contour = np.insert(contour, 0, last, axis=0)
-    contour = np.append(contour, first, axis=0)
     
     dx_dt = gradient_spaced(contour[:, 0], num)
     dy_dt = gradient_spaced(contour[:, 1], num)
@@ -33,9 +27,6 @@ def curvature(contour, num):
     d2y_dt2 = gradient_spaced(dy_dt, num)
 
     curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5    
-    
-    # remove added points
-    curvature = curvature[num*2:-num*2]
     
     return curvature
     
@@ -70,12 +61,12 @@ colors = plt.cm.rainbow(np.linspace(0, 1, len(unique_curv)))
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 
-for i in range(len(contour)):
+for i in range(len(curv1)):
     idx1 = np.where(unique_curv == curv1[i])
     ax1.plot(contour[i][0], contour[i][1], '.', color=colors[idx1])
     ax1.title.set_text('curv1')
 
-for i in range(len(contour2)):
+for i in range(len(curv2)):
     idx2 = np.where(unique_curv == curv2[i])
     ax2.plot(contour2[i][0], contour2[i][1], '.', color=colors[idx2])
     ax2.title.set_text('curv2')
