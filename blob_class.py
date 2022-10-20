@@ -57,7 +57,7 @@ class Blob():
         
         def gradient_spaced(L,num):
             grad = np.array([(L[i+num] - L[i-num])/(num*2) for i in range(-num,len(L)-num)])
-            # reorder matrix to correct indices
+            # reorder matrix to align with contour indices
             grad = np.append(grad[num:], grad[0:num])
             return grad
         
