@@ -1,9 +1,18 @@
+'''Strategy for finding blobs:
+    1. Find maxima in image
+    2. Find contours that only contain a single maxima
+    3. Keep contours that also have specific ellispe fit residuals and area
+    4. Remove contours that are outliers when looking at ellipse fit residuals
+    5. Choose the blob with the largest area as the contour (will update)
+'''
+
 import blob_class as bc
 import math
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
 from skimage.feature import peak_local_max
+from scipy.stats import zscore
 
 
 def contour_maxima(contour, local_maxima):
@@ -34,6 +43,22 @@ def blob_filter(blob, filters):
 
     return True
 
+def outlier_filter(blob_list, params):
+    ''' params is a list to filter the blobs by, the blobs 
+        will be filtered according to the order in the list'''
+
+    blob_copy = np.array(blob_list.copy())
+    
+    for param in params:
+        vals = [eval('blob.' + param) for blob in blob_copy]
+        zscores = np.array(zscore(vals))
+        mean = np.mean(vals)
+        safe = [(0.1 * mean) - mean, (0.1 * mean) + mean]   # 10% above/below mean is fine
+        blob_copy = blob_copy[np.where(((zscores >= -1) & (zscores <= 1))
+                                     | ((vals >= safe[0]) & (vals <= safe[1])))]
+        
+    return blob_copy
+
 
 def blob_scores(blob_list):
     '''spits out a score for each blob in a list'''
@@ -49,10 +74,24 @@ def blob_scores(blob_list):
     score_circularity = [blob.circularity / max_circularity for blob in blob_list]
     score_roughness_perimeter = [(1/blob.roughness_perimeter) / max_roughness_perimeter for blob in blob_list]
     score_solidity = [blob.solidity / max_solidity for blob in blob_list]
+    '''
+    residuals = [blob.ellipse_fit_mean_residual for blob in blob_list]
+    aspect_ratio = [blob.aspect_ratio for blob in blob_list]
+    roundness = [blob.roundness for blob in blob_list]
+    circularity = [blob.circularity for blob in blob_list]
+    resid_corr = [blob.ellipse_fit_mean_residual/blob.perimeter for blob in blob_list] #SEEMS TO WORK GREAT
+    zscores = zscore(resid_corr)
+    print('zscores: ' + str(zscores))
+    print('residuals: ' + str(residuals))
+    print('resid_corr: ' + str(resid_corr))
 
-    score_circularity = np.multiply(score_circularity, 10)
-    score_roughness_perimeter = np.multiply(score_roughness_perimeter, 5)
-    score_solidity = np.multiply(score_solidity, 5)
+    print('aspect_ratio: ' + str(aspect_ratio))
+    print('roundness: ' + str(roundness))
+    print('circularity: ' + str(circularity))
+    '''
+    score_circularity = np.multiply(score_circularity, 0)
+    score_roughness_perimeter = np.multiply(score_roughness_perimeter, 0)
+    score_solidity = np.multiply(score_solidity, 0)
 
     scores = [sum(i) for i in zip(score_area, score_circularity, score_roughness_perimeter, score_solidity)]
     '''
@@ -64,7 +103,7 @@ def blob_scores(blob_list):
     '''
     return scores
 
-im = cv.imread('ex3.tif')
+im = cv.imread('ex11.tif')
 im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
@@ -82,16 +121,20 @@ local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
 im_copy = im.copy()
 for coordinate in local_max_coords:
     cv.circle(im_copy, (coordinate), 2, (0,0,255), 2)
-
-filters = [['roughness_perimeter', None, 1.05],
-           ['solidity', 0.95, None],
-           ['area', 50, None],
-           ['circularity', 0.9, None]]
-
+    
+filters = [['area', 25, None], # at least 0.05% of nucleus area
+           ['ellipse_fit_mean_residual', None, 1]]
+'''
+filters = [['roughness_perimeter', None, 1.15],
+           ['solidity', 0.85, None],
+           ['area', None, None],
+           ['circularity', 0.4, None]]
+'''
 min_thresh = int(blob_blur.pixel_intensity_median)
 blob_list = [[] for i in range(len(local_max_coords))]
 im_contours_copy = im.copy()
 im_contour_copy = im.copy()
+im_outlier_copy = im.copy()
 for i in range(min_thresh,255,10):  # add min threshold for image parameter
     _, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
     #cv.imshow('binary'+str(i), im_thresh)
@@ -105,22 +148,32 @@ for i in range(min_thresh,255,10):  # add min threshold for image parameter
             if key and blob_filter(blob,filters):            # blob only contains 1 maxima
                 blob_list[key_idx].append(blob)  # add blobs to main list based on maxima
                 #cv.imshow('blob ' + str(i) + str(j), blob.image_masked)
-                cv.drawContours(im_contours_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
+                cv.drawContours(im_contours_copy, blob.cv_contour, -1, (0, 255, 0), 2, cv.LINE_8)
                 #cv.circle(im_contour_copy, (key), 2, (0,0,255), 2)
 
+no_outliers = []
 for blob_inner_list in blob_list:
     if len(blob_inner_list) >= 2:
-        scores = blob_scores(blob_inner_list)
+        no_outs = outlier_filter(blob_inner_list, ['ellipse_fit_mean_residual'])
+                                                  
+        no_outliers.append(no_outs)
+        for blob in no_outs:
+            cv.drawContours(im_outlier_copy, blob.cv_contour, -1, (0, 255, 0), 2, cv.LINE_8)
+                
+for blob_inner_list in no_outliers:
+    scores = blob_scores(blob_inner_list)
+    if scores:
         max_value = max(scores)
         max_index = scores.index(max_value)
-        cv.drawContours(im_contour_copy, blob_inner_list[max_index].contour, -1, (0, 255, 0), 2, cv.LINE_8)
+        cv.drawContours(im_contour_copy, blob_inner_list[max_index].cv_contour, -1, (0, 255, 0), 2, cv.LINE_8)
 
 
 #for blob in blob_list[1]:
-#    cv.drawContours(im_contour_copy, blob.contour, -1, (0, 255, 0), 2, cv.LINE_8)
+#    cv.drawContours(im_contour_copy, blob.cv_contour, -1, (0, 255, 0), 2, cv.LINE_8)
 
 cv.imshow('original', im)
 #cv.imshow('peak local maxima', im_copy)
 cv.imshow('all_contours', im_contours_copy)
 cv.imshow('contours', im_contour_copy)
+cv.imshow('no outliers', im_outlier_copy)
 cv.waitKey()
