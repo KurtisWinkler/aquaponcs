@@ -9,6 +9,13 @@ import matplotlib.pyplot as plt
 class Blob():
 
     def __init__(self, contour, image):
+        contour = np.array(contour)
+        
+        # if opencv contour, remove double brackets
+        if len(contour.shape) == 3 and contour.shape[1] == 1:
+            self.cv_contour = contour.copy()
+            contour = contour[:,0]
+
         self.contour = contour
         self.image = image
 
@@ -60,8 +67,7 @@ class Blob():
             # reorder matrix to align with contour indices
             grad = np.append(grad[num:], grad[0:num])
             return grad
-        
-        contour = self.contour[:,0]
+
         
         dx_dt = gradient_spaced(contour[:, 0], num)
         dy_dt = gradient_spaced(contour[:, 1], num)
@@ -97,9 +103,6 @@ class Blob():
             '''
         
         contour = self.contour
-        # remove innner list of contour for input to ellipseModel
-        contour = np.array([contour[i][0] for i in range(len(contour))])
-        
         ellipse = EllipseModel()
 
         # Estimate needed to get params for ellipse, returns True if succeeds
@@ -192,6 +195,10 @@ class Blob():
         return region
 
     @property
+    def residual_corrected(self):
+        return self.ellipse_fit_mean_residual / self.perimeter
+    
+    @property
     def roughness_perimeter(self):
         roughness = self.perimeter / self.perimeter_convex_hull
         # perimeter roughness cannot be less than 1 (rounding errors)
@@ -268,9 +275,10 @@ def plot_image(blob):
     #cv.line(im_copy, (x0, y0), (x2, y2), (0,0,255), 2)
     cv.line(im_copy, (x0, y0), (x0-(x2-x0), y0-(y2-y0)), (0,0,255), 2)
     cv.circle(im_copy, (x0, y0), 2, (0,255,0), 2)
-    cv.drawContours(im_copy, blob.contour, -1, (255,0,0), 2, cv.LINE_8)
+    cv.drawContours(im_copy, blob.cv_contour, -1, (255,0,0), 2, cv.LINE_8)
     cv.imshow('orig', im)
     cv.imshow('params', im_copy)
+    cv.imwrite('pres1.jpg', im_copy)
     cv.imshow('masked', blob.image_masked)
     cv.waitKey()
     
@@ -283,7 +291,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
-    #plot_image(blob)
+    plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
