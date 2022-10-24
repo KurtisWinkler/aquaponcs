@@ -68,6 +68,7 @@ class Blob():
             grad = np.append(grad[num:], grad[0:num])
             return grad
 
+        contour = self.contour
         
         dx_dt = gradient_spaced(contour[:, 0], num)
         dy_dt = gradient_spaced(contour[:, 1], num)
@@ -291,7 +292,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
-    plot_image(blob)
+    #plot_image(blob)
     #cv.imshow('gray', blob.image_gray)
     #cv.imshow('orig', blob.image_original_masked())
     #cv.waitKey()
