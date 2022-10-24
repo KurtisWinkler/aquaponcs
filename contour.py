@@ -65,6 +65,7 @@ plot = plt.savefig('test.png', bbox_inches='tight')
 # #im_gray = cv.equalizeHist(im_gray)
 # im_blur = cv.GaussianBlur(im_gray, (25,25), 0)
 
+<<<<<<< HEAD
 # contour_list = []
 # mask_intensity_list = []
 # for i in range(25,255,10):  # add min threshold for image parameter
@@ -83,6 +84,26 @@ plot = plt.savefig('test.png', bbox_inches='tight')
 # mask_intensity = mask_intensity_list[max_contour_idx]
 # ret, mask = cv.threshold(im_blur, mask_intensity, 255, cv.THRESH_BINARY)
 # im_mask = cv.bitwise_and(im, im, mask = mask)
+=======
+contour_list = []
+for i in range(25,255,10):  # add min threshold for image parameter
+    ret, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
+    # cv.imshow('binary'+str(i), im_thresh)
+    # Find only the most external contours
+    contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    if len(contours) > 0:
+        for j in range(len(contours)):
+            contour_list.append(contours[j])  # add contours to main list
+
+# find the contour with the highest area
+max_contour = max(contour_list, key=cv.contourArea)
+mask = np.zeros(im.shape, np.uint8)
+#mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel) #PERFORM BEFORE FINDCONTOURS?
+cv.fillPoly(mask, pts=[max_contour], color=(255,255,255))
+mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)  # needs to be grayscale for bitwise_and
+#cv.imshow('mask', mask)
+im_mask = cv.bitwise_and(im, im, mask=mask)
+>>>>>>> main
 
 # contour_area = cv.contourArea(max_contour)
 # contour_perimeter = cv.arcLength(max_contour, True)
