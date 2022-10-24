@@ -136,7 +136,7 @@ class Blob(_regionprops.RegionProperties):
         if self.orig_image.ndim > 2:
             image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
             return image_gray[coords]
-        return self.image[coords]
+        return self.orig_image[coords]
 
     @property
     def pixel_intensity_mean(self):
