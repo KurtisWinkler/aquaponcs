@@ -2,12 +2,12 @@ import numpy as np
 import cv2 as cv
 import math
 from skimage.measure import label, regionprops, EllipseModel
-from skimage.measure import _regionprops
+from skimage.measure._regionprops import RegionProperties
 from scipy.stats import skew, kurtosis
 from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
 
-class Blob(_regionprops.RegionProperties):
+class Blob(RegionProperties):
 
     def __init__(self, contour, orig_image):
         contour = np.array(contour)
@@ -189,7 +189,7 @@ class Blob(_regionprops.RegionProperties):
     def print_properties(self, dec=2):
         funcs = [
             'aspect_ratio',
-            'area',
+            'area_filled',
             'area_convex',
             'axis_major_length',
             'axis_minor_length',
@@ -247,7 +247,7 @@ def main():
     im = cv.imread("ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
-    ret, im_thresh = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
+    ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
