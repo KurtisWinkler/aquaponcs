@@ -83,6 +83,7 @@ def percentile_rescale(file, min_percentile, max_percentile):
     percentile_data = im.fromarray(scaled)
     percentile_data.save('percentile_rescaled_ex1.png')
 
+    
 if __name__ == '__main__':
     main()
 
