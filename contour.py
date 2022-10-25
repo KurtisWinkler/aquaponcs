@@ -2,27 +2,35 @@
 This code uses the active_contours function from scikit-image to create a snake that fits to the nucleus of the cell
 '''
 from skimage.draw import circle_perimeter
-from skimage.filters import gaussian
+from skimage.filters import gaussian, sobel
 from skimage.color import rgb2gray
 from skimage import io
 from skimage.segmentation import active_contour
+from skimage.feature import canny
 import numpy as np
 import matplotlib.pyplot as plt
+import contrast_function_scikit as cfs
 
+input_name = 'test_2.jpg'
+output_name_contrast = 'contrasted_image.png'
+output_name = 'new_test_2.png'
 
-img = io.imread('contour_image_test.jpeg')
-img = rgb2gray(img)
+def contour(input_name, output_name_contrast, output_name):
+    
+    contrast_image = cfs.contrast(input_name, output_name_contrast)
+    ## Active_Contour
+    img = io.imread(contrast_image)
+    img = rgb2gray(img)
 
+    s = np.linspace(0, 2*np.pi, 1000)
+    r = 270 + 280*np.sin(s)
+    c = 260 + 270*np.cos(s)
+    init = np.array([r, c]).T
 
-s = np.linspace(0, 2*np.pi, 1000)
-r = 270 + 170*np.sin(s)
-c = 260 + 160*np.cos(s)
-init = np.array([r, c]).T
+    snake = active_contour(sobel(img),
+                        init, w_line=0, w_edge=1, alpha=0.095, gamma=0.001)
 
-snake = active_contour(gaussian(img, 5, preserve_range=True),
-                       init, w_edge=4, alpha=0.005, beta=10, gamma=0.001)
 #print(snake)
-
 
 # contour_perimeter = cv.arcLength(snake, True)
 # contour_circularity = bp.get_circularity(snake)
@@ -31,16 +39,17 @@ snake = active_contour(gaussian(img, 5, preserve_range=True),
 # print('Contour Perimeter: ' + str(round(contour_perimeter,1)))
 # print('Contour Circularity: ' + str(round(contour_circularity,3)))
 
-fig, ax = plt.subplots(figsize=(7, 7))
-ax.imshow(img, cmap=plt.cm.gray)
-ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
-ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
-ax.set_xticks([]), ax.set_yticks([])
-ax.axis([0, img.shape[1], img.shape[0], 0])
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.imshow(img, cmap=plt.cm.gray)
+    ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
+    ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
+    ax.set_xticks([]), ax.set_yticks([])
+    ax.axis([0, img.shape[1], img.shape[0], 0])
 
-plot = plt.savefig('test.png', bbox_inches='tight')
+    plot = plt.savefig(output_name, bbox_inches='tight')
+    return output_name
 
-
+contour(input_name, output_name_contrast, output_name)
 
 
 
@@ -65,7 +74,6 @@ plot = plt.savefig('test.png', bbox_inches='tight')
 # #im_gray = cv.equalizeHist(im_gray)
 # im_blur = cv.GaussianBlur(im_gray, (25,25), 0)
 
-<<<<<<< HEAD
 # contour_list = []
 # mask_intensity_list = []
 # for i in range(25,255,10):  # add min threshold for image parameter
@@ -84,26 +92,6 @@ plot = plt.savefig('test.png', bbox_inches='tight')
 # mask_intensity = mask_intensity_list[max_contour_idx]
 # ret, mask = cv.threshold(im_blur, mask_intensity, 255, cv.THRESH_BINARY)
 # im_mask = cv.bitwise_and(im, im, mask = mask)
-=======
-contour_list = []
-for i in range(25,255,10):  # add min threshold for image parameter
-    ret, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
-    # cv.imshow('binary'+str(i), im_thresh)
-    # Find only the most external contours
-    contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-    if len(contours) > 0:
-        for j in range(len(contours)):
-            contour_list.append(contours[j])  # add contours to main list
-
-# find the contour with the highest area
-max_contour = max(contour_list, key=cv.contourArea)
-mask = np.zeros(im.shape, np.uint8)
-#mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel) #PERFORM BEFORE FINDCONTOURS?
-cv.fillPoly(mask, pts=[max_contour], color=(255,255,255))
-mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)  # needs to be grayscale for bitwise_and
-#cv.imshow('mask', mask)
-im_mask = cv.bitwise_and(im, im, mask=mask)
->>>>>>> main
 
 # contour_area = cv.contourArea(max_contour)
 # contour_perimeter = cv.arcLength(max_contour, True)
