@@ -29,7 +29,11 @@ def min_max_rescale(file):
     
     '''
     # Read the image 
-    image = io.imread(file)
+    try: 
+        image = io.imread(file)
+    except: 
+        FileNotFoundError
+        sys.exit(1)
 
     # Reports pixel intensity values on a scale of 0 to 255 for an 8-bit image
     image.max()
@@ -40,10 +44,8 @@ def min_max_rescale(file):
     image_minmax_scaled.max()
     # 255
     image_minmax_scaled.min()
-    # print(image_minmax_scaled)
-    # returns an array-- how to get it to return an image? 
-    # 0
-
+    # 0 
+    
     minmax_data = im.fromarray(image_minmax_scaled)
     minmax_data.save('minmax_rescaled_ex1.png')
 
@@ -66,7 +68,11 @@ def percentile_rescale(file, min_percentile, max_percentile):
         numpy array of pixel intensities to be saved as a .png
     '''
     # Read the image 
-    image = io.imread(file)
+    try: 
+        image = io.imread(file)
+    except: 
+        FileNotFoundError
+        sys.exit(1)
     
     # Rescale pixel intensity by percentile
     percentiles = np.percentile(image, (min_percentile, max_percentile))
@@ -77,6 +83,7 @@ def percentile_rescale(file, min_percentile, max_percentile):
     percentile_data = im.fromarray(scaled)
     percentile_data.save('percentile_rescaled_ex1.png')
 
+    
 if __name__ == '__main__':
     main()
 
