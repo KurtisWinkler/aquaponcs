@@ -2,19 +2,21 @@
 import cv2 as cv
 import math
 
+
 def get_center(contour):
     M = cv.moments(contour)
     x = int(M['m10']/M['m00'])
     y = int(M['m01']/M['m00'])
     return x, y
 
+
 def get_circularity(contour):
     M = cv.moments(contour)
     area = M['m00']
+    print('area: ' + str(area))
     perimeter = cv.arcLength(contour, True)
     circularity = (4 * math.pi * area) / pow(perimeter, 2)
     return circularity
-
 
 def get_solidity(contour):
     M = cv.moments(contour)
@@ -35,7 +37,6 @@ def get_roundness(contour):
     (x,y),(MA,ma),angle = cv.fitEllipse(contour)
     roundness = (4 * area)/(math.pi * pow(ma, 2))
     return roundness
-
 
 def main(): #FOR TESTING
     # CREATE CONTOURS
