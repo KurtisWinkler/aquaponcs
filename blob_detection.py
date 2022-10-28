@@ -212,28 +212,77 @@ def similar_filter(blob_list, params, num=2):
 
 
 def outlier_filter(blob_list, params):
-    ''' params is a list to filter the blobs by, the blobs 
-        will be filtered according to the order in the list'''
-
+    """
+    Removes outliers from list of blobs in order of params
+    
+    Parameters
+    ----------
+    blob_list : list of Blob objects (class Blob)
+        Outliers will be removed from this list
+    
+    params : nested list
+        Each inner list contains:
+            1st index - blob parameter
+            2nd index - percent threshold for removing outlier
+            3rd index - zscore threshold for removing outlier
+        
+    Returns
+    -------
+    blob_copy : list
+        Copy of blob_list without the outliers
+    
+    Example
+    -------
+    params = [['area', 0.2, 1], ['circularity', 0.1, 2]]
+    
+    blob_filter(blob_list, params) will remove blobs from blob_list
+    if the blob has an area outside 20% of the blob_list mean and has
+    a zscore above 1 OR if the blob has a circularity outside 10% of 
+    the blob_list mean and has a zscore above 2. Returns blob_list with
+    the outliers removed
+    """
     blob_copy = np.array(blob_list.copy())
     
     for param in params:
-        vals = [eval('blob.' + param) for blob in blob_copy]
+        vals = [eval('blob.' + param[0]) for blob in blob_copy]
         zscores = np.array(zscore(vals))
         mean = np.mean(vals)
-        safe = [(0.1 * mean) - mean, (0.1 * mean) + mean]   # 10% above/below mean is fine
-        blob_copy = blob_copy[np.where(((zscores >= -1) & (zscores <= 1))
+        safe = [mean - (mean * param[1]), mean + (mean * param[1])] 
+        blob_copy = blob_copy[np.where(((zscores >= -param[2]) & (zscores <= param[2]))
                                      | ((vals >= safe[0]) & (vals <= safe[1])))]
-
+        
     return list(blob_copy)
 
 
 def blob_best(blob_list, criteria):
-    '''spits out blob with highest score
-       according to criteria, a nested list
-       1st index is criteria name
-       2nd index is criteria ideal value, 'min', or 'max'
-       3rd index is criteria factor'''
+    """
+    Removes the blob with the highest score out of a list of blobs
+    
+    Parameters
+    ----------
+    blob_list : list of Blob objects (class Blob)
+    
+    criteria : nested list
+        Each inner list contains:
+            1st index - blob parameter
+            2nd index - ideal parameter value; or 'min' or 'max'
+            3rd index - criteria factor to multiply score by
+        
+    Returns
+    -------
+    blob : Blob object (class Blob)
+        Blob with highest score in list
+    
+    Example
+    -------
+    criteria = [['area', 50, 1], ['circularity', 'max', 2]]
+    
+    blob_filter(blob_list, criteria) will first rank blobs by how
+    close they are to an area of 50 pixels. It will then rank blobs
+    by how high their circularity is, with the score for circularity
+    being multiplied by 2. The blob with the highest combined score
+    will be returned.
+    """
     
     if len(blob_list) == 0:
         return None
@@ -244,23 +293,22 @@ def blob_best(blob_list, criteria):
         vals = np.array([eval('blob.' + crit[0]) for blob in blob_list])
         
         if crit[1] == 'min':
-            rank = [i[0] for i in sorted(enumerate(vals), key=lambda x:x[1], reverse = True)]
+            vals_unique, rank = np.unique(vals, return_inverse=True)
+            rank = abs(rank-(len(vals_unique)-1))
 
         elif crit[1] == 'max':
-            rank = [i[0] for i in sorted(enumerate(vals), key=lambda x:x[1])]
+            vals_unique, rank = np.unique(vals, return_inverse=True)
             
         elif type(crit[1]) == int or type(crit[1]) == float:
             diff = abs(vals - crit[1])
-            rank = [i[0] for i in sorted(enumerate(diff), key=lambda x:x[1], reverse = True)]
+            vals_unique, rank = np.unique(diff, return_inverse=True)
+            rank = abs(rank-(len(vals_unique)-1))
         
-        for i in range(len(score)):
-            if crit[2] == None:
-                score[i] += rank.index(i)
-            else:
-                score[i] += np.multiply(rank.index(i), crit[2])
-        
-        max_score = max(score)
-        max_idx = list(score).index(max_score)
+        rank = np.multiply(rank, crit[2])
+        score = np.add(score, rank)
+
+    max_score = max(score)
+    max_idx = list(score).index(max_score)
     
     return blob_list[max_idx]
 
@@ -318,10 +366,10 @@ def main():
     sim_blobs = [similar_filter(blob, params, 2) for blob in blob_list]
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
-    out_filter = ['ellipse_fit_mean_residual']
+    out_filter = [['ellipse_fit_mean_residual', 0.1, 1]]
     no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
 
-    criteria = [['area_filled', 'max', None]]
+    criteria = [['area_filled', 'max', 1]]
     blobs_best = [blob_best(blobs, criteria) for blobs in no_outs]
 
 
