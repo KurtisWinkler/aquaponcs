@@ -340,7 +340,6 @@ def blob_best(blob_list, criteria):
     being multiplied by 2. The blob with the highest combined score
     will be returned.
     """
-
     if len(blob_list) == 0:
         return None
 
