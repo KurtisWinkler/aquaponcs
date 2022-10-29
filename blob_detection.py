@@ -1,10 +1,26 @@
-'''Strategy for finding blobs:
-    1. Find maxima in image
-    2. Find contours that only contain a single maxima
-    3. Keep contours that also have specific ellispe fit residuals and area
-    4. Remove contours that are outliers when looking at ellipse fit residuals
-    5. Choose the blob with the largest area as the contour (will update)
-'''
+"""
+blob_detection.py contains functions for detecting blobs,
+drawing blob contours, and finltering for the ideal blobs
+
+Functions
+---------
+flatten - Recursively flattens a nested list into a 1d list
+blob_im - Draws blob contours on an image
+maxima_filter - Returns maxima if contour contains 1 maxima
+blob_filter - Returns True if blob conforms to specified filters
+similar_filter - Returns most similar blobs in a list of blobs
+outlier_filter - Removes outliers from list of blobs
+blob_best - Returns blob with highest score out of a list of blobs
+
+Strategy for finding blobs
+--------------------------
+1. Find maxima in image
+2. Find contours that only contain a single maxima
+3. Keep contours that conform to specific parameters
+4. Keep the most similar blobs/contours for each maxima
+5. Remove outlier blobs/contours
+6. Keep blob with highest score
+"""
 
 import blob_class as bc
 import math
@@ -65,10 +81,13 @@ def blob_im(im, blobs):
     im_copy: image matrix
         A copy of the original image with contours drawn
     """
-    im_copy = im.copy()
-    blobs_flat = flatten(blobs)
+    im_copy = im.copy()  # create copy of image to return
+    blobs_flat = flatten(blobs)  # flatten nested list
     contours = [blob.cv_contour for blob in blobs_flat]
+
+    # draw contours on the copied image
     cv.drawContours(im_copy, contours, -1, (0, 255, 0), 2, cv.LINE_8)
+
     return im_copy
 
 
@@ -90,19 +109,25 @@ def maxima_filter(contour, local_maxima):
         maxima - x,y coordinate of maxima inside contour
         idx - index of maxima in local_maxima list
     """
-    points = [cv.pointPolygonTest(np.array(contour), (int(maxima[0]), int(maxima[1])), False) for maxima in local_maxima]
+    # points is list of booleans
+    # True in each index that maxima is inside contour
+    points = [cv.pointPolygonTest(np.array(contour), 
+                                  (int(maxima[0]), int(maxima[1])), 
+                                  False) 
+              for maxima in local_maxima]
 
-    if points.count(True) == 1:
+    if points.count(True) == 1:  # if only one maxima in contour
         idx = points.index(True)
         maxima = local_maxima[idx]
         return maxima, idx
 
+    # return None if maxima found does not equal 1
     return None, None
 
 
 def blob_filter(blob, filters):
     """
-    Determines if blob conforms to specified filters
+    Returns True if blob conforms to specified filters
     
     Parameters
     ----------
@@ -145,6 +170,13 @@ def similar_filter(blob_list, params, num=2):
     """
     Returns most similar blobs in a list of blobs
     
+    Description
+    -----------
+    Blobs are compared to one another based on a number of
+    specified parameters. The blob list is split into multiple
+    lists of similar blobs. The list with the highest
+    number of similar blobs is returned.
+    
     Parameters
     ----------
     blob_list : list of Blob objects (class Blob)
@@ -156,8 +188,8 @@ def similar_filter(blob_list, params, num=2):
             2nd index - percent threshold for similarity
             
     num : int, optional (default 2)
-        Min value of similar blobs that are needed to both analyze
-        similarity and return the similar blobs
+        Minimum value of similar blobs that are needed to both 
+        analyze similarity and return the similar blobs
         
     Returns
     -------
@@ -173,16 +205,20 @@ def similar_filter(blob_list, params, num=2):
     circulairty (within 10%). The list with the highest number
     of similar blobs is returned.
     """
+    # First check that blob_list is long enough to analyze
     if len(blob_list) >= num:
         sim_list = [[]]
         sim_idx = 0
         last_blob = None
-        
-        # blobs are sorted by area; largest first
+
         for blob in blob_list:
-            if last_blob is not None:
+            if last_blob is not None:  # if not the first blob in list
                 filters = []
 
+                # Create filters to be passed into blob_filter()
+                # Filters are based on previous blob in blob_list
+                # and used to determine if the current blob is 
+                # similar enough to the previous blob
                 for i in range(len(params)):
                     val = eval('last_blob.' + params[i][0])
                     val_range = val * params[i][1]
@@ -190,30 +226,41 @@ def similar_filter(blob_list, params, num=2):
                     val_max = val + val_range
                     filters.append([params[i][0], val_min, val_max])
 
+                # check if current blob is similar to previous blob
+                # and add nested list to sim_list if NOT similar
                 if not blob_filter(blob, filters):
                     sim_list.append([])
                     sim_idx += 1
-                    
+            
+            # Append blob to appropiate location in sim_list
+            # Same list as previous blob if similar
+            # New inner list if NOT similar
             sim_list[sim_idx].append(blob)
             last_blob = blob
-            
+        
+        # Get the nested list of similar blobs with highest number of blobs
         sim_len = [len(sim) for sim in sim_list]
         sim_max_idx = [idx for idx, item in enumerate(sim_len) if item == max(sim_len)]
-        
-        sim_blobs = sim_list[sim_max_idx[0]]  # returns largest area blobs if tie
+        sim_blobs = sim_list[sim_max_idx[0]]  # returns first index if tie
+
+        # Final check that similar blobs are above the required number
         if len(sim_blobs) >= num:
             return sim_blobs 
-        
-        else:
-            return None
-     
-    else:
-        return None
+    
+    # Return None if not enough similar blobs are found
+    return None
 
 
 def outlier_filter(blob_list, params):
     """
     Removes outliers from list of blobs in order of params
+    
+    Description
+    -----------
+    For each blob parameter, zscores are calculated for the blobs
+    in the list. If a blob is outside the specified zscore and
+    outside a specified percentage of the mean, it is 
+    identified as an outlier and removed from the list
     
     Parameters
     ----------
@@ -241,13 +288,19 @@ def outlier_filter(blob_list, params):
     the blob_list mean and has a zscore above 2. Returns blob_list with
     the outliers removed
     """
+    # create copy of list as numpy array
     blob_copy = np.array(blob_list.copy())
     
     for param in params:
-        vals = [eval('blob.' + param[0]) for blob in blob_copy]
-        zscores = np.array(zscore(vals))
-        mean = np.mean(vals)
-        safe = [mean - (mean * param[1]), mean + (mean * param[1])] 
+        vals = [eval('blob.' + param[0]) for blob in blob_copy]  # get vals of param
+        zscores = np.array(zscore(vals))  # calculate zscores for param
+        mean = np.mean(vals)  # calculate mean of param
+        
+        # Calculate safe zone (not outlier) if blob is within a specified
+        # percentage of the mean of the blobs
+        safe = [mean - (mean * param[1]), mean + (mean * param[1])]
+        
+        # Remove outliers if blob not within safe zone or specified zscore
         blob_copy = blob_copy[np.where(((zscores >= -param[2]) & (zscores <= param[2]))
                                      | ((vals >= safe[0]) & (vals <= safe[1])))]
         
@@ -256,7 +309,16 @@ def outlier_filter(blob_list, params):
 
 def blob_best(blob_list, criteria):
     """
-    Removes the blob with the highest score out of a list of blobs
+    Returns the blob with the highest score out of a list of blobs
+    
+    Descripton
+    ----------
+    For each criteria, the blobs are ranked on how closely they meet 
+    it. For a blob list of length 5, the blob that most closely matches
+    the criteria would get a score of 4, and the blob that's farthest 
+    from the criteria would get a score of 0. The scores would then be
+    multiplied by a factor if specified. A blob gets a score for each
+    criteria and the blob with the highest overall score is returned.
     
     Parameters
     ----------
@@ -287,11 +349,17 @@ def blob_best(blob_list, criteria):
     if len(blob_list) == 0:
         return None
     
+    # initial score of 0 for each blob
     score = np.zeros(len(blob_list))
     
     for crit in criteria:
+        # get blob values for the criteria
         vals = np.array([eval('blob.' + crit[0]) for blob in blob_list])
         
+        # vals_unique is a list of unique values in vals
+        # rank is how well blob fits criteria (highest score = closest)
+        # rank is automatically sorted low -> high so needs to be 
+        # reversed in 'min' and ideal value conditions (ex. [1,0,2] -> [1,2,0])
         if crit[1] == 'min':
             vals_unique, rank = np.unique(vals, return_inverse=True)
             rank = abs(rank-(len(vals_unique)-1))
@@ -304,12 +372,14 @@ def blob_best(blob_list, criteria):
             vals_unique, rank = np.unique(diff, return_inverse=True)
             rank = abs(rank-(len(vals_unique)-1))
         
-        rank = np.multiply(rank, crit[2])
-        score = np.add(score, rank)
+        rank = np.multiply(rank, crit[2])  # multiple rank by factor
+        score = np.add(score, rank)  # add rank to overall score
 
+    # Find idx of blob with highest score
     max_score = max(score)
     max_idx = list(score).index(max_score)
     
+    # Return highest scoring blob
     return blob_list[max_idx]
 
 
