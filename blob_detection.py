@@ -172,6 +172,8 @@ def similar_filter(blob_list, params, num=2):
     ----------
     blob_list : list of Blob objects (class Blob)
         Contains blobs which will be analyzed for similarity
+        Blob order in list matters as each blob is evaluated
+        against the previous one
 
     params : nested list
         Each inner list contains:
