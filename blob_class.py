@@ -83,7 +83,7 @@ class Blob(RegionProperties):
         return np.mean(self.curvature(num))
     
     @property
-    def ellipse_fit_mean_residual(self):
+    def ellipse_fit_residual(self):
         ''' Fits the contour to an ellipse, then returns the mean
             residuals (shortest distance of contour point to 
             ellipse model)
@@ -99,8 +99,16 @@ class Blob(RegionProperties):
             residuals = ellipse.residuals(contour)
             return np.mean(residuals)
         else:
+            return None
+        
+    @property
+    def ellipse_fit_residual_mean(self):
+        efr = self.ellipse_fit_residual
+        if efr is not None:
+            return np.mean(efr)
+        else:
             return math.inf
-    
+
     @property
     def image_convex_bbox(self):
         im = self.image_convex.astype(np.uint8)
@@ -162,7 +170,7 @@ class Blob(RegionProperties):
     
     @property
     def residual_corrected(self):
-        return self.ellipse_fit_mean_residual / self.perimeter_crofton
+        return self.ellipse_fit_residual_mean / self.perimeter_crofton
     
     @property
     def roughness_perimeter(self):
@@ -199,7 +207,7 @@ class Blob(RegionProperties):
             'circularity',
             'curvature_mean',
             'eccentricity',
-            'ellipse_fit_mean_residual',
+            'ellipse_fit_residual_mean',
             'equivalent_diameter_area',
             'orientation',
             'perimeter_crofton',

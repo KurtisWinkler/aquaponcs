@@ -1,6 +1,6 @@
 """
 blob_detection.py contains functions for detecting blobs,
-drawing blob contours, and finltering for the ideal blobs
+drawing blob contours, and filtering for the ideal blobs
 
 Functions
 ---------
@@ -424,7 +424,7 @@ def main():
                     contour_list[key_idx].append(blob)
 
     filters = [['area', 25, None],  # at least 0.05% of nucleus area
-               ['ellipse_fit_mean_residual', None, 2]]
+               ['ellipse_fit_residual_mean', None, 2]]
 
     blob_list = []
     for contours in contour_list:
@@ -438,7 +438,7 @@ def main():
     sim_blobs = [similar_filter(blob, params, 2) for blob in blob_list]
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
-    out_filter = [['ellipse_fit_mean_residual', 0.1, 1]]
+    out_filter = [['ellipse_fit_residual_mean', 0.1, 1]]
     no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
 
     criteria = [['area_filled', 'max', 1]]
@@ -449,8 +449,8 @@ def main():
     cv.imshow('3. maxima contours', blob_im(im, contour_list))
     cv.imshow('4. filtered contours', blob_im(im, blob_list))
     cv.imshow('5. similar blobs', blob_im(im, sim_blobs))
-    cv.imshow('5. no outliers', blob_im(im, no_outs))
-    cv.imshow('6. final contours', blob_im(im, blobs_best))
+    cv.imshow('6 no outliers', blob_im(im, no_outs))
+    cv.imshow('7 final contours', blob_im(im, blobs_best))
     cv.waitKey()
 
 
