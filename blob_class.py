@@ -7,7 +7,98 @@ from scipy.stats import skew, kurtosis
 from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
 
+
 class Blob(RegionProperties):
+    """
+    A class to get attributes of Blobs
+    
+    Description:
+    Inherits from the RegionProperties class in skimage.
+    List of properties that can be obtained are found in
+    regionprops documentation:
+    "https://scikit-image.org/docs/stable/api/
+    skimage.measure.html#skimage.measure.regionprops"
+
+    Attributes
+    ----------
+    contour : nested list
+        contains contour points of blob
+        
+    cv_contour : nested list
+        same as contour, but with points in double brackets
+
+    orig_image : image matrix
+        original image that contour was made from
+
+    label_im : matrix
+        labeled image by regions/contours
+
+    Methods (* indicates from RegionProperties)
+    -------------------------------------------
+    aspect_ratio
+    *area
+    *area_bbox
+    *area_convex
+    *area_filled
+    *axis_major_length
+    *axis_minor_length
+    *bbox
+    *centroid
+    centroid_xy
+    *centroid_local
+    *centroid_weighted
+    *centroid_weighted_local
+    circularity
+    *coords
+    curvature
+    curvature_mean
+    *eccentricity
+    ellipse_fit_residual
+    ellipse_fit_residual_mean
+    *equivalent_diameter_area
+    *euler_number
+    *extent
+    *feret_diamter_max
+    *image
+    *image_convex
+    image_convex_bbox
+    *image_filled
+    *image_intensity
+    image_mask
+    image_mask_bbox
+    image_masked
+    *inertia_tensor
+    *inertia_tensor_eigvals
+    *intensity_max
+    *intensity_mean
+    *intensity_min
+    *label
+    *moments
+    *moments_central
+    *moments_hu
+    *moments_normalized
+    *moments_weighted
+    *moments_weighted_central
+    *moments_weighted_hu
+    *moments_weighted_normalized
+    *orientation
+    *perimeter
+    perimeter_convex_hull
+    *perimeter_crofton
+    pixel_intensities
+    pixel_intensity_mean
+    pixel_intensity_median
+    pixel_intensity_percentile
+    pixel_intensity_std
+    pixel_kurtosis
+    pixel_skew
+    roughness_perimeter
+    roughness_surface
+    roundness
+    *slice
+    *solidity
+
+    """
 
     def __init__(self, contour, orig_image):
         contour = np.array(contour)
@@ -16,6 +107,8 @@ class Blob(RegionProperties):
         if len(contour.shape) == 3 and contour.shape[1] == 1:
             self.cv_contour = contour.copy()
             contour = contour[:,0]
+        elif contour.shape == 2:
+            self.cv_contour = np.array([[pt] for pt in contour])
 
         self.contour = contour
         self.orig_image = orig_image
@@ -155,6 +248,11 @@ class Blob(RegionProperties):
     @property
     def pixel_intensity_median(self):
         return np.median(self.pixel_intensities)
+    
+    def pixel_intensity_percentile(self, percentile=75):
+        pixel_sort = np.sort(self.pixel_intensities)
+        idx = int(percentile/100*len(pixel_sort))
+        return pixel_sort[idx]
 
     @property
     def pixel_intensity_std(self):
@@ -167,10 +265,6 @@ class Blob(RegionProperties):
     @property
     def pixel_skew(self):
         return skew(self.pixel_intensities, bias=False, nan_policy='omit')
-    
-    @property
-    def residual_corrected(self):
-        return self.ellipse_fit_residual_mean / self.perimeter_crofton
     
     @property
     def roughness_perimeter(self):
@@ -190,11 +284,6 @@ class Blob(RegionProperties):
         num = 4 * self.area_filled
         den = math.pi * pow(self.axis_major_length, 2)
         return num / den
-    
-    def pixel_intensity_percentile(self, percentile=75):
-        pixel_sort = np.sort(self.pixel_intensities)
-        idx = int(percentile/100*len(pixel_sort))
-        return pixel_sort[idx]
     
     def print_properties(self, dec=2):
         funcs = [

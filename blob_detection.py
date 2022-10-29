@@ -11,15 +11,6 @@ blob_filter - Returns True if blob conforms to specified filters
 similar_filter - Returns most similar blobs in a list of blobs
 outlier_filter - Removes outliers from list of blobs
 blob_best - Returns blob with highest score out of a list of blobs
-
-Strategy for finding blobs
---------------------------
-1. Find maxima in image
-2. Find contours that only contain a single maxima
-3. Keep contours that conform to specific parameters
-4. Keep the most similar blobs/contours for each maxima
-5. Remove outlier blobs/contours
-6. Keep blob with highest score
 """
 
 import blob_class as bc
@@ -386,6 +377,16 @@ def blob_best(blob_list, criteria):
 
 
 def main():
+    """
+    Strategy for finding blobs
+    --------------------------
+    1. Find maxima in image
+    2. Find contours that only contain a single maxima
+    3. Keep contours that conform to specific parameters
+    4. Keep the most similar blobs/contours for each maxima
+    5. Remove outlier blobs/contours
+    6. Keep blob with highest score
+    """
     im = cv.imread('ex11.tif')
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (15, 15), 0)
