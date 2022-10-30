@@ -49,7 +49,7 @@ def min_max_rescale(file):
     minmax_data = im.fromarray(image_minmax_scaled)
     minmax_data.save('minmax_rescaled_ex1.png')
 
-def percentile_rescale(file, min_percentile, max_percentile):
+def percentile_rescale(file, min_percentile, max_percentile, out_name):
     '''
     Description: 
     Improves the contrast of the image by rescaling the percentile 
@@ -81,7 +81,9 @@ def percentile_rescale(file, min_percentile, max_percentile):
     print(scaled)
 
     percentile_data = im.fromarray(scaled)
-    percentile_data.save('percentile_rescaled_ex1.png')
+    percentile_data.save(out_name)
+    
+    return out_name
 
     
 if __name__ == '__main__':
