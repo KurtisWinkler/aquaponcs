@@ -12,9 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import contrast_function_scikit as cfs
 
-input_name = 'test_1.jpeg'
+input_name = 'test_3.jpg'
 output_name_contrast = 'contrasted_image.png'
-output_name = 'new_test.png'
+output_name = 'new_test_3.png'
+
 
 def store_evolution_in(L):
     """Returns a callback function to store the evolution of the level sets in
@@ -40,7 +41,7 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     
     '''
     
-    contrast_image = cfs.contrast(input_name, output_name_contrast)
+    contrast_image = cfs.percentile_rescale(input_name, 0.5, 99.5, output_name_contrast)
 
     img = io.imread(contrast_image)
     img = rgb2gray(img)

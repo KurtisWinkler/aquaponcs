@@ -2,149 +2,67 @@ import numpy as np
 import cv2 as cv
 import math
 from skimage.measure import label, regionprops, EllipseModel
-from skimage.measure._regionprops import RegionProperties
 from scipy.stats import skew, kurtosis
-from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
 
 
-class Blob(RegionProperties):
-    """
-    A class to get attributes of Blobs
-    
-    Description:
-    Inherits from the RegionProperties class in skimage.
-    List of properties that can be obtained are found in
-    regionprops documentation:
-    "https://scikit-image.org/docs/stable/api/
-    skimage.measure.html#skimage.measure.regionprops"
+class Blob():
 
-    Attributes
-    ----------
-    contour : nested list
-        contains contour points of blob
-        
-    cv_contour : nested list
-        same as contour, but with points in double brackets
-
-    orig_image : image matrix
-        original image that contour was made from
-
-    label_im : matrix
-        labeled image by regions/contours
-
-    Methods (* indicates from RegionProperties)
-    -------------------------------------------
-    aspect_ratio
-    *area
-    *area_bbox
-    *area_convex
-    *area_filled
-    *axis_major_length
-    *axis_minor_length
-    *bbox
-    *centroid
-    centroid_xy
-    *centroid_local
-    *centroid_weighted
-    *centroid_weighted_local
-    circularity
-    *coords
-    curvature
-    curvature_mean
-    *eccentricity
-    ellipse_fit_residual
-    ellipse_fit_residual_mean
-    *equivalent_diameter_area
-    *euler_number
-    *extent
-    *feret_diamter_max
-    *image
-    *image_convex
-    image_convex_bbox
-    *image_filled
-    *image_intensity
-    image_mask
-    image_mask_bbox
-    image_masked
-    *inertia_tensor
-    *inertia_tensor_eigvals
-    *intensity_max
-    *intensity_mean
-    *intensity_min
-    *label
-    *moments
-    *moments_central
-    *moments_hu
-    *moments_normalized
-    *moments_weighted
-    *moments_weighted_central
-    *moments_weighted_hu
-    *moments_weighted_normalized
-    *orientation
-    *perimeter
-    perimeter_convex_hull
-    *perimeter_crofton
-    pixel_intensities
-    pixel_intensity_mean
-    pixel_intensity_median
-    pixel_intensity_percentile
-    pixel_intensity_std
-    pixel_kurtosis
-    pixel_skew
-    roughness_perimeter
-    roughness_surface
-    roundness
-    *slice
-    *solidity
-
-    """
-
-    def __init__(self, contour, orig_image):
+    def __init__(self, contour, image):
         contour = np.array(contour)
         
         # if opencv contour, remove double brackets
         if len(contour.shape) == 3 and contour.shape[1] == 1:
             self.cv_contour = contour.copy()
             contour = contour[:,0]
-        elif contour.shape == 2:
-            self.cv_contour = np.array([[pt] for pt in contour])
 
         self.contour = contour
-        self.orig_image = orig_image
-        
-        self.label_im = label(self.image_mask)
-        
-        sl = ndi.find_objects(self.label_im)
-        super().__init__(slice = sl[0],  # take only slice from list
-                         label = 1,  # only one slice
-                         label_image = self.label_im,
-                         intensity_image = orig_image,
-                         cache_active = False)
-    
-    # ALWAYS USE area_filled and perimeter_crofton for accurate results
-    
+        self.image = image
+
     @property
     def aspect_ratio(self):
         return self.axis_major_length / self.axis_minor_length
-    
+
     @property
-    def centroid_xy(self):
-        centroid = self.centroid
+    def area(self):
+        return self.region.area_filled
+
+    @property
+    def area_convex_hull(self):
+        return self.region.area_convex
+
+    @property
+    def axis_major_length(self):
+        return self.region.axis_major_length
+
+    @property
+    def axis_minor_length(self):
+        return self.region.axis_minor_length
+
+    @property
+    def centroid(self):
+        centroid = self.region.centroid
         # return x,y instead of default y,x
         return centroid[1], centroid[0]
 
     @property
     def circularity(self):
-        area = self.area_filled
-        perimeter = self.perimeter_crofton
+        area = self.area
+        perimeter = self.perimeter
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
         # cannot have circularity above 1 (rounding errors can cause this)
         return min(circularity, 1)
 
-    def curvature(self, num_space=5):
+    @property
+    def coords(self):
+        points = np.where(self.image_mask == 255)
+        coords = [[points[0][i], points[1][i]] for i in range(len(points[0]))]
+        return coords
+    
+    @property
+    def curvature(self, num=5):
         
-        def gradient_spaced(L, num):
+        def gradient_spaced(L,num):
             grad = np.array([(L[i+num] - L[i-num])/(num*2) for i in range(-num,len(L)-num)])
             # reorder matrix to align with contour indices
             grad = np.append(grad[num:], grad[0:num])
@@ -152,8 +70,8 @@ class Blob(RegionProperties):
 
         contour = self.contour
         
-        dx_dt = gradient_spaced(contour[:, 0], num_space)
-        dy_dt = gradient_spaced(contour[:, 1], num_space)
+        dx_dt = gradient_spaced(contour[:, 0], num)
+        dy_dt = gradient_spaced(contour[:, 1], num)
 
         # velocity
         vel = np.array([[dx_dt[i], dy_dt[i]] for i in range(dx_dt.size)])
@@ -164,19 +82,20 @@ class Blob(RegionProperties):
         # unit tangent vector
         tangent = np.array([1/ds_dt] * 2).transpose() * vel
 
-        d2s_dt2 = gradient_spaced(ds_dt, num_space)
-        d2x_dt2 = gradient_spaced(dx_dt, num_space)
-        d2y_dt2 = gradient_spaced(dy_dt, num_space)
+        d2s_dt2 = gradient_spaced(ds_dt, num)
+        d2x_dt2 = gradient_spaced(dx_dt, num)
+        d2y_dt2 = gradient_spaced(dy_dt, num)
 
         curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
-
+        
         return curvature
-
-    def curvature_mean(self, num=5):
-        return np.mean(self.curvature(num))
     
     @property
-    def ellipse_fit_residual(self):
+    def eccentricity(self):
+        return self.region.eccentricity
+
+    @property
+    def ellipse_fit_mean_residual(self):
         ''' Fits the contour to an ellipse, then returns the mean
             residuals (shortest distance of contour point to 
             ellipse model)
@@ -192,54 +111,62 @@ class Blob(RegionProperties):
             residuals = ellipse.residuals(contour)
             return np.mean(residuals)
         else:
-            return None
-        
-    @property
-    def ellipse_fit_residual_mean(self):
-        efr = self.ellipse_fit_residual
-        if efr is not None:
-            return np.mean(efr)
-        else:
             return math.inf
+    
+    @property
+    def equivalent_diameter_area(self):
+        return self.region.equivalent_diameter_area
 
     @property
     def image_convex_bbox(self):
-        im = self.image_convex.astype(np.uint8)
+        im = self.region.image_convex.astype(np.uint8)
         im[im == 1] = 255
         return im
-    
+
     @property
     def image_mask(self):
-        mask = np.zeros(self.orig_image.shape[0:2], np.uint8)
+        mask = np.zeros(self.image.shape[0:2], np.uint8)
         cv.fillPoly(mask, pts=[self.contour], color=(255, 255, 255))
         return mask
-    
+
     @property
     def image_mask_bbox(self):
-        im = self.image.astype(np.uint8)
+        im = self.region.image.astype(np.uint8)
         im[im == 1] = 255
         return im
-    
+
     @property
     def image_masked(self):
         '''Original image with mask'''
-        return cv.bitwise_and(self.orig_image,
-                              self.orig_image,
+        return cv.bitwise_and(self.image,
+                              self.image,
                               mask=self.image_mask)
+
+    @property
+    def moments(self):
+        return self.region.moments
     
     @property
+    def orientation(self):
+        return self.region.orientation
+
+    @property
+    def perimeter(self):
+        return max(self.region.perimeter_crofton, 1) #won't equal 0
+
+    @property
     def perimeter_convex_hull(self):
-        convex_label = label(self.image_convex)
+        convex_label = label(self.image_convex_bbox)
         convex_perimeter = regionprops(convex_label)[0]['perimeter_crofton']
         return max(convex_perimeter, 1)
-    
+
     @property
     def pixel_intensities(self):
         coords = np.where(self.image_mask == 255)
-        if self.orig_image.ndim > 2:
+        if self.image.ndim > 2:
             image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
             return image_gray[coords]
-        return self.orig_image[coords]
+        return self.image[coords]
 
     @property
     def pixel_intensity_mean(self):
@@ -248,11 +175,6 @@ class Blob(RegionProperties):
     @property
     def pixel_intensity_median(self):
         return np.median(self.pixel_intensities)
-    
-    def pixel_intensity_percentile(self, percentile=75):
-        pixel_sort = np.sort(self.pixel_intensities)
-        idx = int(percentile/100*len(pixel_sort))
-        return pixel_sort[idx]
 
     @property
     def pixel_intensity_std(self):
@@ -265,10 +187,21 @@ class Blob(RegionProperties):
     @property
     def pixel_skew(self):
         return skew(self.pixel_intensities, bias=False, nan_policy='omit')
+
+    @property
+    def region(self):
+        '''blob inherits regionprops properties from scikit class'''
+        label_img = label(self.image_mask)
+        region = regionprops(label_img)[0]
+        return region
+
+    @property
+    def residual_corrected(self):
+        return self.ellipse_fit_mean_residual / self.perimeter
     
     @property
     def roughness_perimeter(self):
-        roughness = self.perimeter_crofton / self.perimeter_convex_hull
+        roughness = self.perimeter / self.perimeter_convex_hull
         # perimeter roughness cannot be less than 1 (rounding errors)
         return max(roughness, 1)
     
@@ -281,25 +214,33 @@ class Blob(RegionProperties):
 
     @property
     def roundness(self):
-        num = 4 * self.area_filled
+        num = 4 * self.area
         den = math.pi * pow(self.axis_major_length, 2)
         return num / den
-    
+
+    @property
+    def solidity(self):
+        return self.region.solidity
+
+    def pixel_intensity_percentile(self, percentile=75):
+        pixel_sort = np.sort(self.pixel_intensities)
+        idx = int(percentile/100*len(pixel_sort))
+        return pixel_sort[idx]
+
     def print_properties(self, dec=2):
         funcs = [
             'aspect_ratio',
-            'area_filled',
-            'area_convex',
+            'area',
+            'area_convex_hull',
             'axis_major_length',
             'axis_minor_length',
-            'centroid_xy',
+            'centroid',
             'circularity',
-            'curvature_mean',
             'eccentricity',
-            'ellipse_fit_residual_mean',
+            'ellipse_fit_mean_residual',
             'equivalent_diameter_area',
             'orientation',
-            'perimeter_crofton',
+            'perimeter',
             'perimeter_convex_hull',
             'pixel_intensity_mean',
             'pixel_intensity_median',
@@ -313,17 +254,12 @@ class Blob(RegionProperties):
             ]
 
         for i in range(len(funcs)):
-            try:
-                val = eval('self.' + funcs[i])
-                print(funcs[i] + ': ' + str(np.around(val, dec)))
-            except:
-                val = eval('self.' + funcs[i] + '()')
-                print(funcs[i] + ': ' + str(np.around(val, dec)))
-
+            val = eval('self.' + funcs[i])
+            print(funcs[i] + ': ' + str(np.around(val, dec)))
 
 
 def plot_image(blob):
-    x0, y0 = blob.centroid_xy
+    x0, y0 = blob.centroid
     y0 = int(y0)
     x0 = int(x0)
     orientation = blob.orientation
@@ -332,7 +268,7 @@ def plot_image(blob):
     x2 = int(x0 - math.sin(orientation) * 0.5 * blob.axis_major_length)
     y2 = int(y0 - math.cos(orientation) * 0.5 * blob.axis_major_length)
     
-    im = blob.orig_image
+    im = blob.image
     im_copy = im.copy()
     
     #cv.line(im_copy, (x0, y0), (x1, y1), (0,255,255), 2)
@@ -351,12 +287,15 @@ def main():
     im = cv.imread("ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
-    ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
+    ret, im_thresh = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
     blob.print_properties(2)
     #plot_image(blob)
+    #cv.imshow('gray', blob.image_gray)
+    #cv.imshow('orig', blob.image_original_masked())
+    #cv.waitKey()
     '''
     cv.imshow('masked', blob.image_masked)
     plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
