@@ -11,10 +11,12 @@ from skimage.morphology import disk
 import numpy as np
 import matplotlib.pyplot as plt
 import contrast_function_scikit as cfs
+import blob_class as bc
+import cv2 as cv
 
-input_name = 'test_3.jpg'
+input_name = 'test_2.jpg'
 output_name_contrast = 'contrasted_image.png'
-output_name = 'new_test_3.png'
+output_name = 'new_test_2.png'
 
 
 def store_evolution_in(L):
@@ -70,19 +72,35 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     snake = morphological_chan_vese(img, num_iter=70, init_level_set=init_ls,
                              smoothing=10, iter_callback=callback)
 
-
+    #print('max:', np.max(snake))
     fig, ax = plt.subplots(figsize=(7, 7))
     
     ax.imshow(img, cmap="gray")
     ax.set_axis_off()
-    ax.contour(snake, [0.5], colors='r')
+    ax.contour(snake, [1], colors='r')
     
     ax.plot(init_ls[:, 1], init_ls[:, 0], '--r', lw=3)
-    ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
 
     plot = plt.savefig(output_name, bbox_inches='tight')
     
-    return output_name
+    cs = ax.contour(snake, [1])
+    p = cs.collections[0].get_paths()[0]
+    v = p.vertices
+    xs = v[:,0]
+    ys = v[:,1]
+    contour = [[int(xs[i]),int(ys[i])] for i in range(len(xs)-1)]
+    #contour = np.array([[pt] for pt in contour])
+    ## Return as an array of arrays where each array is a point where the snake exists
+    
+    return output_name, snake, contour
 
 if __name__ == '__main__':
-    nucleus_contour(input_name, output_name_contrast, output_name)
+    output_name, snake,  contour = nucleus_contour(input_name, output_name_contrast, output_name)
+    #print('snake' + str(snake))
+    #contour = [[snake[i, 1], snake[i, 0]] for i in range(len(snake[:,0]))]
+    #fig, ax = plt.subplots(figsize=(7, 7))
+    #contour = ax.contour(snake, [0.5])
+    print(contour)
+    Nuc_blob = bc.Blob(contour, input_name)
+    print(Nuc_blob.area_filled)
+    print(Nuc_blob.perimeter_crofton)
