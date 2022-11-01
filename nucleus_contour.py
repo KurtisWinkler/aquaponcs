@@ -16,6 +16,7 @@ input_name = 'test_3.jpg'
 output_name_contrast = 'contrasted_image.png'
 output_name = 'new_test_3.png'
 
+
 def store_evolution_in(L):
     """Returns a callback function to store the evolution of the level sets in
     the given list.
