@@ -3,12 +3,8 @@ import matplotlib.pyplot as plt
 from skimage import io, exposure, data
 from PIL import Image as im
 
-# scikit-image install
-# conda install scikit-image
-
 # contour detection documentation
 # https://danielmuellerkomorowska.com/2020/06/27/contrast-adjustment-with-scikit-image/
-
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,10 +16,10 @@ def contrast(image_name, output_name):
     image = io.imread(image_name)
 
 def main():
-    min_max_rescale('ex1.tif')
-    percentile_rescale('ex1.tif', 0.5, 99.5)
+    min_max_rescale('ex1.tif', 'minmax_rescaled_ex1.png')
+    percentile_rescale('ex1.tif', 0.5, 99.5, 'percentile_rescaled_ex1.png')
 
-def min_max_rescale(file):
+def min_max_rescale(file, output_name):
     '''
     Description:
     Improves the contrast of the image by rescaling the minimum and maximum 
@@ -32,7 +28,12 @@ def min_max_rescale(file):
     Input:
     file: str
         file path for the image
-        
+    max_rescale: int
+        the pixel intensity value to rescale the current maximum up to
+    min_rescale: int
+        the pixel intensity value to rescale the current maximum down to
+    output_name: str 
+        the file path for the output .png
     Output: 
     minmax_data: array 
         numpy array of pixel intensities to be saved as a .png
@@ -49,39 +50,21 @@ def min_max_rescale(file):
     image.max()
     image.min()
 
-
-    # Option 1: Min/max rescaling (Rescale the min and max pixel intensity values)
-
     # Rescale the min and max pixel intensity values
 
     image_minmax_scaled = exposure.rescale_intensity(image)
     image_minmax_scaled.max()
     # 255
     image_minmax_scaled.min()
-
-    # print(image_minmax_scaled)
-    # returns an array-- how to get it to return an image? 
     # 0
 
     minmax_data = im.fromarray(image_minmax_scaled)
-    minmax_data.save('minmax_rescaled_ex1.png')
-
-    # Option 2: Percentile rescaling (like option 1 but uses percentiles)
-    percentiles = np.percentile(image, (0.5, 99.5))
-    scaled = exposure.rescale_intensity(image,
-                                    in_range=tuple(percentiles))
-    #print(scaled)
-
-    percentile_data = im.fromarray(scaled)
-    percentile_data.save(output_name)
-    return output_name
-
-    # 0 
+    minmax_data.save(output_name)
     
-    minmax_data = im.fromarray(image_minmax_scaled)
-    minmax_data.save('minmax_rescaled_ex1.png')
+    return minmax_data
 
-def percentile_rescale(file, min_percentile, max_percentile, out_name):
+
+def percentile_rescale(file, min_percentile, max_percentile, output_name):
     '''
     Description: 
     Improves the contrast of the image by rescaling the percentile 
@@ -94,6 +77,8 @@ def percentile_rescale(file, min_percentile, max_percentile, out_name):
         minimum percentile to rescale 
     max_percentile: int or float
         maximum percentile to rescale
+    output_name: str
+        name of file path for the output image to be saved as .png
         
     Output: 
     minmax_data: array 
@@ -110,15 +95,13 @@ def percentile_rescale(file, min_percentile, max_percentile, out_name):
     percentiles = np.percentile(image, (min_percentile, max_percentile))
     scaled = exposure.rescale_intensity(image,
                                         in_range=tuple(percentiles))
-    print(scaled)
 
     percentile_data = im.fromarray(scaled)
-    percentile_data.save(out_name)
+    percentile_data.save(output_name)
     
-    return out_name
+    return percentile_data
 
 
     
 if __name__ == '__main__':
     main()
-
