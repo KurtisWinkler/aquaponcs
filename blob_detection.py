@@ -6,6 +6,8 @@ Functions
 ---------
 flatten - Recursively flattens a nested list into a 1d list
 blob_im - Draws blob contours on an image
+get_maxima - Returns local maxima of blob/image
+get_contours - Returns contours of image
 maxima_filter - Returns maxima if contour contains 1 maxima
 blob_filter - Returns True if blob conforms to specified filters
 similar_filter - Returns most similar blobs in a list of blobs
