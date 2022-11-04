@@ -144,6 +144,42 @@ def get_maxima(image, distance=20, threshold=0.8):
         raise TypeError('image must be numpy array or Blob instance')
 
 
+def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
+    """
+    Returns list of contours in image
+
+    Parameters
+    ----------
+    image : numpy ndarray
+        Image to find contours in
+
+    thresh_min : int
+        Minimum threshold
+        
+    thresh_max : int
+        Maximum threshold
+        
+    thresh_step: int
+        Step between min and max threshold
+
+    Returns
+    -------
+    contours : list of numpy ndarrays
+        A list of contour points
+    """
+    im_thresh = [cv.threshold(image, i, 255, cv.THRESH_BINARY)[1]
+                 for i in range(thresh_min, thresh_max, thresh_step)]
+    
+    contours_nested = [cv.findContours(thresh,
+                                       cv.RETR_EXTERNAL,
+                                       cv.CHAIN_APPROX_NONE)[0]
+                       for thresh in im_thresh]
+    
+    contours = [contour for contours in contours_nested
+                        for contour in contours]
+    return contours
+
+
 def maxima_filter(contour, local_maxima):
     """
     Returns maxima inside contour if contour contains only 1 maxima
@@ -519,7 +555,7 @@ def main():
     5. Remove outlier blobs/contours
     6. Keep blob with highest score
     """
-    im = cv.imread('ex111.tif')
+    im = cv.imread('ex11.tif')
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (15, 15), 0)
 
@@ -538,18 +574,14 @@ def main():
         cv.circle(im_maxima, (coordinate), 2, (255, 0, 0), 2)
 
     min_thresh = int(blob_blur.pixel_intensity_median)
+    contours = get_contours(im_blur, min_thresh)
+    
     contour_list = [[] for i in range(len(local_max_coords))]
-    # add min threshold for image parameter
-    for i in range(min_thresh, 255, 10):
-        _, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
-        contours, _ = cv.findContours(im_thresh,
-                                      cv.RETR_EXTERNAL,
-                                      cv.CHAIN_APPROX_NONE)
-        if len(contours) > 0:
-            for contour in contours:
-                key, key_idx = maxima_filter(contour, local_max_coords)
-                if key:
-                    contour_list[key_idx].append(bc.Blob(contour, im))
+    if len(contours) > 0:
+        for contour in contours:
+            key, key_idx = maxima_filter(contour, local_max_coords)
+            if key:
+                contour_list[key_idx].append(bc.Blob(contour, im))
 
     filters = [['area_filled', 25, None],  # at least 0.05% of nucleus area
                ['ellipse_fit_residual_mean', None, 2]]
