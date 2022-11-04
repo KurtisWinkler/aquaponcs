@@ -39,6 +39,9 @@ def flatten(L, flat_list=None):
     flat_list : list
         Flattened version of original list
     """
+    if not isinstance(L, list):
+        raise TypeError('L must be a list')
+
     # initialize flat list on first call
     if flat_list is None:
         flat_list = []
@@ -72,8 +75,15 @@ def blob_im(im, blobs):
     im_copy: image matrix
         A copy of the original image with contours drawn
     """
-    im_copy = im.copy()  # create copy of image to return
+    if not isinstance(im, (list, np.ndarray)):
+        raise TypeError('image must be a list or numpy array')
+
     blobs_flat = flatten(blobs)  # flatten nested list
+
+    if not all((isinstance(blob, bc.Blob) for blob in blobs_flat)):
+        raise TypeError('blob_list must only contain blobs')
+
+    im_copy = im.copy()  # create copy of image to return
     contours = [blob.cv_contour for blob in blobs_flat]
 
     # draw contours on the copied image
@@ -100,6 +110,20 @@ def maxima_filter(contour, local_maxima):
         maxima - x,y coordinate of maxima inside contour
         idx - index of maxima in local_maxima list
     """
+    if not isinstance(contour, (list, np.ndarray)):
+        raise TypeError('contour must be list or numpy array')
+
+    if not isinstance(local_maxima, list):
+        raise TypeError('local_maxima must be list')
+
+    if not ((len(np.shape(contour)) == 2 and np.shape(contour)[1] == 2) or
+            (len(np.shape(contour)) == 3 and np.shape(contour)[2] == 2)):
+        raise IndexError('contour should have shape (x,2) or (x,1,2)')
+
+    if (len(np.shape(local_maxima)) != 2 or
+            np.shape(local_maxima)[1] != 2):
+        raise IndexError('local_maxima should have shape (x,2)')
+
     # points is list of booleans
     # True in each index that maxima is inside contour
     points = [cv.pointPolygonTest(np.array(contour),
@@ -144,6 +168,15 @@ def blob_filter(blob, filters):
     area between 20 and 500 pixels and a circularity greater than 0.8.
     Otherwise it will return False.
     """
+    if not isinstance(blob, bc.Blob):
+        raise TypeError('blob must be object of class Blob')
+
+    if not isinstance(filters, list):
+        raise TypeError('filters must be a list')
+
+    if len(np.shape(filters)) != 2 or np.shape(filters)[1] != 3:
+        raise IndexError('filters should have shape (x,3)')
+
     for filt in filters:
 
         if filt[1]:
@@ -181,6 +214,7 @@ def similar_filter(blob_list, params, num=2):
             2nd index - percent threshold for similarity
 
     num : int, optional (default 2)
+        Must be >= 1
         Minimum value of similar blobs that are needed to both
         analyze similarity and return the similar blobs
 
@@ -195,9 +229,27 @@ def similar_filter(blob_list, params, num=2):
 
     blob_filter(blob_list, params) will parse blob_list into lists
     containing blobs that are similar in area (within 20%) and
-    circulairty (within 10%). The list with the highest number
+    circularity (within 10%). The list with the highest number
     of similar blobs is returned.
     """
+    if not isinstance(blob_list, list):
+        raise TypeError('blob_list must be a list')
+
+    if not all((isinstance(blob, bc.Blob) for blob in blob_list)):
+        raise TypeError('blob_list must only contain blobs')
+
+    if not isinstance(params, list):
+        raise TypeError('params must be a list')
+
+    if len(np.shape(params)) != 2 or np.shape(params)[1] != 2:
+        raise IndexError('params should have shape (x,2)')
+
+    if not isinstance(num, int):
+        raise TypeError('num must be an int')
+
+    if num < 1:
+        raise IndexError('num must be >= 1')
+
     # First check that blob_list is long enough to analyze
     if len(blob_list) >= num:
         sim_list = [[]]
@@ -282,6 +334,18 @@ def outlier_filter(blob_list, params):
     the blob_list mean and has a zscore above 2. Returns blob_list with
     the outliers removed
     """
+    if not isinstance(blob_list, list):
+        raise TypeError('blob_list must be a list')
+
+    if not all((isinstance(blob, bc.Blob) for blob in blob_list)):
+        raise TypeError('blob_list must only contain blobs')
+
+    if not isinstance(params, list):
+        raise TypeError('params must be a list')
+
+    if len(np.shape(params)) != 2 or np.shape(params)[1] != 3:
+        raise IndexError('params should have shape (x,3)')
+
     # create copy of list as numpy array
     blob_copy = np.array(blob_list.copy())
 
@@ -340,6 +404,18 @@ def blob_best(blob_list, criteria):
     being multiplied by 2. The blob with the highest combined score
     will be returned.
     """
+    if not isinstance(blob_list, list):
+        raise TypeError('blob_list must be a list')
+
+    if not all((isinstance(blob, bc.Blob) for blob in blob_list)):
+        raise TypeError('blob_list must only contain blobs')
+
+    if not isinstance(criteria, list):
+        raise TypeError('params must be a list')
+
+    if len(np.shape(criteria)) != 2 or np.shape(criteria)[1] != 3:
+        raise IndexError('criteria should have shape (x,3)')
+
     if len(blob_list) == 0:
         return None
 
@@ -419,11 +495,10 @@ def main():
                                       cv.RETR_EXTERNAL,
                                       cv.CHAIN_APPROX_NONE)
         if len(contours) > 0:
-            for j in range(len(contours)):
-                blob = bc.Blob(contours[j], im)
-                key, key_idx = maxima_filter(blob.contour, local_max_coords)
+            for contour in contours:
+                key, key_idx = maxima_filter(contour, local_max_coords)
                 if key:
-                    contour_list[key_idx].append(blob)
+                    contour_list[key_idx].append(bc.Blob(contour, im))
 
     filters = [['area', 25, None],  # at least 0.05% of nucleus area
                ['ellipse_fit_residual_mean', None, 2]]
@@ -437,10 +512,10 @@ def main():
               ['roughness_perimeter', 0.1],
               ['circularity', 0.2]]
 
-    sim_blobs = [similar_filter(blob, params, 2) for blob in blob_list]
+    sim_blobs = [similar_filter(blobs, params, 2) for blobs in blob_list]
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
-    out_filter = [['ellipse_fit_residual_mean', 0.1, 1]]
+    out_filter = [['curvature_mean()', 0.1, 1]]
     no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
 
     criteria = [['area_filled', 'max', 1]]
