@@ -32,3 +32,5 @@ jobs:
           activate-environment: aqua
           environment-file: environment.yml
       - run: python -m unittest test/test_contour
+      - run: python -m unittest test/test_seg
+

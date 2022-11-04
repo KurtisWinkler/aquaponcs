@@ -1,21 +1,30 @@
 import numpy as np
 import cv2
+import sys
+
+def main():
+    cv2.imshow("img_result", imageSegmentation('siL_pre_6-slice2-adjusted.tif'))
+    cv2.waitKey(0)
 
 
 def imageSegmentation(filename):
     """
     Use marker-based image segmentation using watershed algorithm.
-    Label the region which being the foreground or object with one intensity, label the region 
-    which being background or non-object with another intensity and finally the region which are 
-    not sure of anything, label it with 0. That is marker. Then apply watershed algorithm. Then the 
-    marker will be updated with the labels gaven, and the boundaries of objects will have a value 
+    Label the region which being the foreground or object with one intensity, label the region
+    which being background or non-object with another intensity and finally the region which are
+    not sure of anything, label it with 0. That is marker. Then apply watershed algorithm. Then the
+    marker will be updated with the labels gaven, and the boundaries of objects will have a value
     of -1.
     --------------------------------
     :param filename: The original image to be processed.
     :return: The image has segmented chromatins.
     """
 
-    img = cv2.imread(filename)
+    try:
+        img = cv2.imread(filename)
+    except:
+        FileNotFoundError
+        sys.exit(1)
 
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     im_blur = cv2.GaussianBlur(gray,(15,15),0)
@@ -54,5 +63,5 @@ def imageSegmentation(filename):
     return img
 
 
-cv2.imshow("img_result", imageSegmentation('siL_pre_6-slice2-adjusted.tif'))
-cv2.waitKey(0)
+if __name__ == '__main__':
+    main()
