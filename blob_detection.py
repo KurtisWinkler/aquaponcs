@@ -41,7 +41,7 @@ def flatten(L, flat_list=None):
     """
     if not isinstance(L, list):
         raise TypeError('L must be a list')
-    
+
     # initialize flat list on first call
     if flat_list is None:
         flat_list = []
@@ -77,12 +77,12 @@ def blob_im(im, blobs):
     """
     if not isinstance(im, (list, np.ndarray)):
         raise TypeError('image must be a list or numpy array')
-    
+
     blobs_flat = flatten(blobs)  # flatten nested list
-    
+
     if not all((isinstance(blob, bc.Blob) for blob in blobs_flat)):
         raise TypeError('blob_list must only contain blobs')
-    
+
     im_copy = im.copy()  # create copy of image to return
     contours = [blob.cv_contour for blob in blobs_flat]
 
@@ -111,19 +111,19 @@ def maxima_filter(contour, local_maxima):
         idx - index of maxima in local_maxima list
     """
     if not isinstance(contour, (list, np.ndarray)):
-        TypeError('contour must be list or numpy array')
-    
-    if not isinstance(contour, (list)):
-        TypeError('local_maxima must be list')
-        
+        raise TypeError('contour must be list or numpy array')
+
+    if not isinstance(local_maxima, list):
+        raise TypeError('local_maxima must be list')
+
     if not ((len(np.shape(contour)) == 2 and np.shape(contour)[1] == 2) or
             (len(np.shape(contour)) == 3 and np.shape(contour)[2] == 2)):
         raise IndexError('contour should have shape (x,2) or (x,1,2)')
-        
-    if (len(np.shape(local_maxima)) != 2 or 
+
+    if (len(np.shape(local_maxima)) != 2 or
             np.shape(local_maxima)[1] != 2):
         raise IndexError('local_maxima should have shape (x,2)')
-    
+
     # points is list of booleans
     # True in each index that maxima is inside contour
     points = [cv.pointPolygonTest(np.array(contour),
@@ -170,13 +170,13 @@ def blob_filter(blob, filters):
     """
     if not isinstance(blob, bc.Blob):
         raise TypeError('blob must be object of class Blob')
-        
+
     if not isinstance(filters, list):
         raise TypeError('filters must be a list')
-        
+
     if len(np.shape(filters)) != 2 or np.shape(filters)[1] != 3:
         raise IndexError('filters should have shape (x,3)')
-        
+
     for filt in filters:
 
         if filt[1]:
@@ -234,22 +234,22 @@ def similar_filter(blob_list, params, num=2):
     """
     if not isinstance(blob_list, list):
         raise TypeError('blob_list must be a list')
-    
+
     if not all((isinstance(blob, bc.Blob) for blob in blob_list)):
         raise TypeError('blob_list must only contain blobs')
-        
+
     if not isinstance(params, list):
         raise TypeError('params must be a list')
-        
+
     if len(np.shape(params)) != 2 or np.shape(params)[1] != 2:
         raise IndexError('params should have shape (x,2)')
-                        
+
     if not isinstance(num, int):
         raise TypeError('num must be an int')
-                        
+
     if num < 1:
         raise IndexError('num must be >= 1')
-    
+
     # First check that blob_list is long enough to analyze
     if len(blob_list) >= num:
         sim_list = [[]]
@@ -336,16 +336,16 @@ def outlier_filter(blob_list, params):
     """
     if not isinstance(blob_list, list):
         raise TypeError('blob_list must be a list')
-    
+
     if not all((isinstance(blob, bc.Blob) for blob in blob_list)):
         raise TypeError('blob_list must only contain blobs')
-        
+
     if not isinstance(params, list):
         raise TypeError('params must be a list')
-        
+
     if len(np.shape(params)) != 2 or np.shape(params)[1] != 3:
         raise IndexError('params should have shape (x,3)')
-    
+
     # create copy of list as numpy array
     blob_copy = np.array(blob_list.copy())
 
@@ -406,16 +406,16 @@ def blob_best(blob_list, criteria):
     """
     if not isinstance(blob_list, list):
         raise TypeError('blob_list must be a list')
-    
+
     if not all((isinstance(blob, bc.Blob) for blob in blob_list)):
         raise TypeError('blob_list must only contain blobs')
-        
+
     if not isinstance(criteria, list):
         raise TypeError('params must be a list')
-        
+
     if len(np.shape(criteria)) != 2 or np.shape(criteria)[1] != 3:
         raise IndexError('criteria should have shape (x,3)')
-    
+
     if len(blob_list) == 0:
         return None
 
@@ -520,7 +520,6 @@ def main():
 
     criteria = [['area_filled', 'max', 1]]
     blobs_best = [blob_best(blobs, criteria) for blobs in no_outs]
-
 
     cv.imshow('1. original', im)
     cv.imshow('2. peak local maxima', im_maxima)
