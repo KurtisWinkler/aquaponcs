@@ -6,6 +6,8 @@ Functions
 ---------
 flatten - Recursively flattens a nested list into a 1d list
 blob_im - Draws blob contours on an image
+get_maxima - Returns local maxima of blob/image
+get_contours - Returns contours of image
 maxima_filter - Returns maxima if contour contains 1 maxima
 blob_filter - Returns True if blob conforms to specified filters
 similar_filter - Returns most similar blobs in a list of blobs
@@ -90,6 +92,94 @@ def blob_im(im, blobs):
     cv.drawContours(im_copy, contours, -1, (0, 255, 0), 2, cv.LINE_8)
 
     return im_copy
+
+
+def get_maxima(image, distance=20, threshold=0.8):
+    """
+    Returns local maxima in an image
+
+    Parameters
+    ----------
+    image : numpy ndarray or Blob instance
+        Image/Blob to find maxima for
+
+    distance : int
+        Minimum pixel distance between maxima
+        
+    threshold : float or int
+        Minimum relative intensity threshold for maxima
+
+    Returns
+    -------
+    local_max_coords : list
+        A list of x,y coordinates of local maxima
+    """
+    if not isinstance(distance, int):
+        raise TypeError('distance must be an int')
+    
+    if not isinstance(threshold, (int, float)):
+        raise TypeError('threshold must be int or float')
+        
+    if threshold > 1 or threshold < 0:
+        raise IndexError('threshold must be 0 <= threshold <= 1')
+    
+    if isinstance(image, np.ndarray):
+        if image.ndim > 2:
+            image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+
+        local_max_thresh = np.mean(image) * threshold
+        local_max_coords = peak_local_max(image,
+                                          min_distance=distance,
+                                          threshold_abs=local_max_thresh)
+        local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
+        return local_max_coords
+    
+    elif isinstance(image, bc.Blob):
+        local_max_thresh = image.pixel_intensity_percentile(threshold * 100)
+        local_max_coords = peak_local_max(image.image_masked,
+                                          min_distance=distance,
+                                          threshold_abs=local_max_thresh)
+        local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
+        return local_max_coords
+    
+    else:
+        raise TypeError('image must be numpy array or Blob instance')
+
+
+def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
+    """
+    Returns list of contours in image
+
+    Parameters
+    ----------
+    image : numpy ndarray
+        Image to find contours in
+
+    thresh_min : int
+        Minimum threshold
+        
+    thresh_max : int
+        Maximum threshold
+        
+    thresh_step: int
+        Step between min and max threshold
+
+    Returns
+    -------
+    contours : list of numpy ndarrays
+        A list of contour points
+    """
+    im_thresh = [cv.threshold(image, i, 255, cv.THRESH_BINARY)[1]
+                 for i in range(thresh_min, thresh_max, thresh_step)]
+    
+    contours_nested = [cv.findContours(thresh,
+                                       cv.RETR_EXTERNAL,
+                                       cv.CHAIN_APPROX_NONE)[0]
+                       for thresh in im_thresh]
+    
+    contours = [contour for contours in contours_nested
+                        for contour in contours]
+    return contours
 
 
 def maxima_filter(contour, local_maxima):
@@ -418,6 +508,9 @@ def blob_best(blob_list, criteria):
 
     if len(blob_list) == 0:
         return None
+    
+    if len(blob_list) == 1:
+        return blob_list[0]
 
     # initial score of 0 for each blob
     score = np.zeros(len(blob_list))
@@ -476,31 +569,23 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob_blur = bc.Blob(contour, im_blur)
 
-    local_max_thresh = blob_blur.pixel_intensity_percentile(80)
-    local_max_coords = peak_local_max(blob_blur.image_masked,
-                                      min_distance=20,
-                                      threshold_abs=local_max_thresh)
-    local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
+    local_max_coords = get_maxima(blob_blur, distance=20)
 
     im_maxima = im.copy()
     for coordinate in local_max_coords:
         cv.circle(im_maxima, (coordinate), 2, (255, 0, 0), 2)
 
     min_thresh = int(blob_blur.pixel_intensity_median)
+    contours = get_contours(im_blur, min_thresh)
+    
     contour_list = [[] for i in range(len(local_max_coords))]
-    # add min threshold for image parameter
-    for i in range(min_thresh, 255, 10):
-        _, im_thresh = cv.threshold(im_blur, i, 255, cv.THRESH_BINARY)
-        contours, _ = cv.findContours(im_thresh,
-                                      cv.RETR_EXTERNAL,
-                                      cv.CHAIN_APPROX_NONE)
-        if len(contours) > 0:
-            for contour in contours:
-                key, key_idx = maxima_filter(contour, local_max_coords)
-                if key:
-                    contour_list[key_idx].append(bc.Blob(contour, im))
+    if len(contours) > 0:
+        for contour in contours:
+            key, key_idx = maxima_filter(contour, local_max_coords)
+            if key:
+                contour_list[key_idx].append(bc.Blob(contour, im))
 
-    filters = [['area', 25, None],  # at least 0.05% of nucleus area
+    filters = [['area_filled', 25, None],  # at least 0.05% of nucleus area
                ['ellipse_fit_residual_mean', None, 2]]
 
     blob_list = []
@@ -515,10 +600,13 @@ def main():
     sim_blobs = [similar_filter(blobs, params, 2) for blobs in blob_list]
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
-    out_filter = [['curvature_mean()', 0.1, 1]]
+    out_filter = [['area_filled', 0.5, 1.5],
+                  ['curvature_mean()', 0.1, 1.25],
+                  ['circularity', 0.1, 1.25]]
     no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
 
-    criteria = [['area_filled', 'max', 1]]
+    criteria = [['area_filled', 'max', 1],
+                ['pixel_skew', 0, 1]]
     blobs_best = [blob_best(blobs, criteria) for blobs in no_outs]
 
     cv.imshow('1. original', im)
