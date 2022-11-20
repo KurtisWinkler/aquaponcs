@@ -117,13 +117,13 @@ def get_maxima(image, distance=20, threshold=0.8):
     """
     if not isinstance(distance, int):
         raise TypeError('distance must be an int')
-    
+
     if not isinstance(threshold, (int, float)):
         raise TypeError('threshold must be int or float')
-        
+
     if threshold > 1 or threshold < 0:
         raise IndexError('threshold must be 0 <= threshold <= 1')
-    
+
     if isinstance(image, np.ndarray):
         if image.ndim > 2:
             image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -132,17 +132,17 @@ def get_maxima(image, distance=20, threshold=0.8):
         local_max_coords = peak_local_max(image,
                                           min_distance=distance,
                                           threshold_abs=local_max_thresh)
-        local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
+        local_max_coords = [[x, y] for y, x in local_max_coords]  # y,x -> x,y
         return local_max_coords
-    
+
     elif isinstance(image, bc.Blob):
         local_max_thresh = image.pixel_intensity_percentile(threshold * 100)
         local_max_coords = peak_local_max(image.image_masked,
                                           min_distance=distance,
                                           threshold_abs=local_max_thresh)
-        local_max_coords = [[x, y] for y, x in local_max_coords]  # switch to x,y
+        local_max_coords = [[x, y] for y, x in local_max_coords]  # y,x -> x,y
         return local_max_coords
-    
+
     else:
         raise TypeError('image must be numpy array or Blob instance')
 
@@ -168,27 +168,43 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
     Returns
     -------
     contours : list of numpy ndarrays
-        A list of contour points
+        A list of contours
     """
     im_thresh = [cv.threshold(image, i, 255, cv.THRESH_BINARY)[1]
                  for i in range(thresh_min, thresh_max, thresh_step)]
-    
+
     contours_nested = [cv.findContours(thresh,
                                        cv.RETR_EXTERNAL,
                                        cv.CHAIN_APPROX_NONE)[0]
                        for thresh in im_thresh]
-    
+
     contours = [contour for contours in contours_nested
-                        for contour in contours]
+                for contour in contours]
     return contours
 
 
 def segment_contours(binary_image):
+    """
+    Segments binary image and returns list of contours
+
+    Parameters
+    ----------
+    binary_image : numpy ndarray
+        Image to find contours in
+
+    Returns
+    -------
+    contours : list of numpy ndarrays
+        A list of contours
+    """
     # apply distance transform
     distance = ndi.distance_transform_edt(binary_image)
 
     # find maximum coordinates and label on mask
-    coords = peak_local_max(distance, min_distance=10, footprint=np.ones((3, 3)), labels=binary_image)
+    coords = peak_local_max(distance,
+                            min_distance=10,
+                            footprint=np.ones((3, 3)),
+                            labels=binary_image)
     mask = np.zeros(distance.shape, dtype=bool)
     mask[tuple(coords.T)] = True
 
@@ -200,8 +216,10 @@ def segment_contours(binary_image):
     contours = []
     for i in range(1, np.max(labels)+1):
         binary = np.zeros(labels.shape, dtype="uint8")
-        binary[np.where(labels==i)] = 255
-        contour, _ = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+        binary[np.where(labels == i)] = 255
+        contour, _ = cv.findContours(binary,
+                                     cv.RETR_EXTERNAL,
+                                     cv.CHAIN_APPROX_NONE)
         contours.append(contour[0])
 
     return contours
@@ -209,7 +227,7 @@ def segment_contours(binary_image):
 
 def maxima_filter(contour, local_maxima):
     """
-    Returns maxima inside contour if contour contains only 1 maxima
+    Returns maxima inside contour if contour contains 1 or more maxima
 
     Parameters
     ----------
@@ -221,9 +239,9 @@ def maxima_filter(contour, local_maxima):
 
     Returns
     -------
-    maxima, idx : tuple of ints, int
-        maxima - x,y coordinate of maxima inside contour
-        idx - index of maxima in local_maxima list
+    maxima, idxs : tuple of lists
+        maxima - list containing x,y coordinates of maxima inside contour
+        idxs - list of indices of maxima in local_maxima list
     """
     if not isinstance(contour, (list, np.ndarray)):
         raise TypeError('contour must be list or numpy array')
@@ -242,12 +260,12 @@ def maxima_filter(contour, local_maxima):
     # points is list of booleans
     # True in each index that maxima is inside contour
     points = np.array([cv.pointPolygonTest(np.array(contour),
-                                  (int(maxima[0]), int(maxima[1])),
-                                  False)
+                                           (int(maxima[0]), int(maxima[1])),
+                                           False)
                        for maxima in local_maxima])
 
-    if np.sum(points==True) >= 1:  # if maxima found
-        idxs = np.where(points==True)
+    if np.sum(points == 1) >= 1:  # if maxima found
+        idxs = np.where(points == 1)  # points are true
         maxima = np.array(local_maxima)[idxs]
         return maxima, idxs[0]
 
@@ -529,7 +547,7 @@ def blob_best(blob_list, criteria):
 
     if len(blob_list) == 0:
         return None
-    
+
     if len(blob_list) == 1:
         return blob_list[0]
 
@@ -578,7 +596,7 @@ def main():
     5. Remove outlier blobs/contours
     6. Keep blob with highest score
     """
-    im = cv.imread('ex111.tif')
+    im = cv.imread('ex6.tif')
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
@@ -590,7 +608,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob_blur = bc.Blob(contour, im_blur)
 
-    local_max_coords = get_maxima(blob_blur, distance=20, threshold=0.85)
+    local_max_coords = get_maxima(blob_blur, distance=4, threshold=0.85)
 
     im_maxima = im.copy()
     for coordinate in local_max_coords:
@@ -616,7 +634,6 @@ def main():
                         if keys is not None:
                             if len(keys) == 1:
                                 contour_list[key_idxs[0]].append(bc.Blob(sc, im))
-
 
     filters = [['area_filled', 25, None],  # at least 0.05% of nucleus area
                ['ellipse_fit_residual_mean', None, 2]]
