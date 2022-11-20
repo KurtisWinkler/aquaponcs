@@ -1,7 +1,6 @@
 """
 blob_detection.py contains functions for detecting blobs,
 drawing blob contours, and filtering for the ideal blobs
-
 Functions
 ---------
 flatten - Recursively flattens a nested list into a 1d list
@@ -22,6 +21,8 @@ import cv2 as cv
 from matplotlib import pyplot as plt
 from skimage.feature import peak_local_max
 from scipy.stats import zscore
+from skimage.segmentation import watershed
+from scipy import ndimage as ndi
 
 
 def flatten(L, flat_list=None):
@@ -105,7 +106,7 @@ def get_maxima(image, distance=20, threshold=0.8):
 
     distance : int
         Minimum pixel distance between maxima
-        
+
     threshold : float or int
         Minimum relative intensity threshold for maxima
 
@@ -157,10 +158,10 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
 
     thresh_min : int
         Minimum threshold
-        
+
     thresh_max : int
         Maximum threshold
-        
+
     thresh_step: int
         Step between min and max threshold
 
@@ -179,6 +180,30 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
     
     contours = [contour for contours in contours_nested
                         for contour in contours]
+    return contours
+
+
+def segment_contours(binary_image):
+    # apply distance transform
+    distance = ndi.distance_transform_edt(binary_image)
+
+    # find maximum coordinates and label on mask
+    coords = peak_local_max(distance, min_distance=10, footprint=np.ones((3, 3)), labels=binary_image)
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+
+    # perform watershed segmentation
+    markers, _ = ndi.label(mask)
+    labels = watershed(-distance, markers, mask=binary_image)
+
+    # get contours of labeled points
+    contours = []
+    for i in range(1, np.max(labels)+1):
+        binary = np.zeros(labels.shape, dtype="uint8")
+        binary[np.where(labels==i)] = 255
+        contour, _ = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+        contours.append(contour[0])
+
     return contours
 
 
@@ -216,17 +241,17 @@ def maxima_filter(contour, local_maxima):
 
     # points is list of booleans
     # True in each index that maxima is inside contour
-    points = [cv.pointPolygonTest(np.array(contour),
+    points = np.array([cv.pointPolygonTest(np.array(contour),
                                   (int(maxima[0]), int(maxima[1])),
                                   False)
-              for maxima in local_maxima]
+                       for maxima in local_maxima])
 
-    if points.count(True) == 1:  # if only one maxima in contour
-        idx = points.index(True)
-        maxima = local_maxima[idx]
-        return maxima, idx
+    if np.sum(points==True) >= 1:  # if maxima found
+        idxs = np.where(points==True)
+        maxima = np.array(local_maxima)[idxs]
+        return maxima, idxs[0]
 
-    # return None if maxima found does not equal 1
+    # return None if no maxima found
     return None, None
 
 
@@ -253,7 +278,6 @@ def blob_filter(blob, filters):
     Example
     -------
     filters = [['area', 20, 500], ['circularity', 0.8, None]]
-
     blob_filter(blob, filters) will return True if the blob has an
     area between 20 and 500 pixels and a circularity greater than 0.8.
     Otherwise it will return False.
@@ -316,7 +340,6 @@ def similar_filter(blob_list, params, num=2):
     Example
     -------
     params = [['area', 0.2], ['circularity', 0.1]]
-
     blob_filter(blob_list, params) will parse blob_list into lists
     containing blobs that are similar in area (within 20%) and
     circularity (within 10%). The list with the highest number
@@ -417,7 +440,6 @@ def outlier_filter(blob_list, params):
     Example
     -------
     params = [['area', 0.2, 1], ['circularity', 0.1, 2]]
-
     blob_filter(blob_list, params) will remove blobs from blob_list
     if the blob has an area outside 20% of the blob_list mean and has
     a zscore above 1 OR if the blob has a circularity outside 10% of
@@ -487,7 +509,6 @@ def blob_best(blob_list, criteria):
     Example
     -------
     criteria = [['area', 50, 1], ['circularity', 'max', 2]]
-
     blob_filter(blob_list, criteria) will first rank blobs by how
     close they are to an area of 50 pixels. It will then rank blobs
     by how high their circularity is, with the score for circularity
@@ -557,9 +578,9 @@ def main():
     5. Remove outlier blobs/contours
     6. Keep blob with highest score
     """
-    im = cv.imread('ex11.tif')
+    im = cv.imread('ex111.tif')
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-    im_blur = cv.GaussianBlur(im_gray, (15, 15), 0)
+    im_blur = cv.GaussianBlur(im_gray,(15,15),0)
 
     '''example mask for finding nuclues -> now to find blobs'''
     ret, im_binary = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
@@ -569,7 +590,7 @@ def main():
     contour = max(contours, key=cv.contourArea)
     blob_blur = bc.Blob(contour, im_blur)
 
-    local_max_coords = get_maxima(blob_blur, distance=20)
+    local_max_coords = get_maxima(blob_blur, distance=20, threshold=0.85)
 
     im_maxima = im.copy()
     for coordinate in local_max_coords:
@@ -577,13 +598,25 @@ def main():
 
     min_thresh = int(blob_blur.pixel_intensity_median)
     contours = get_contours(im_blur, min_thresh)
-    
+
     contour_list = [[] for i in range(len(local_max_coords))]
     if len(contours) > 0:
         for contour in contours:
-            key, key_idx = maxima_filter(contour, local_max_coords)
-            if key:
-                contour_list[key_idx].append(bc.Blob(contour, im))
+            keys, key_idxs = maxima_filter(contour, local_max_coords)
+            if keys is not None:
+                if len(keys) == 1:
+                    contour_list[key_idxs[0]].append(bc.Blob(contour, im))
+
+                else: # if len(keys) > 1
+                    seg_binary = np.zeros(im_gray.shape, dtype="uint8")
+                    cv.fillPoly(seg_binary, pts=[contour], color=(255,255,255))
+                    seg_contours = segment_contours(seg_binary)
+                    for sc in seg_contours:
+                        keys, key_idxs = maxima_filter(sc, local_max_coords)
+                        if keys is not None:
+                            if len(keys) == 1:
+                                contour_list[key_idxs[0]].append(bc.Blob(sc, im))
+
 
     filters = [['area_filled', 25, None],  # at least 0.05% of nucleus area
                ['ellipse_fit_residual_mean', None, 2]]
@@ -600,13 +633,22 @@ def main():
     sim_blobs = [similar_filter(blobs, params, 2) for blobs in blob_list]
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
+    '''
     out_filter = [['area_filled', 0.5, 1.5],
                   ['curvature_mean()', 0.1, 1.25],
-                  ['circularity', 0.1, 1.25]]
+                  ['circularity', 0.1, 1.25],
+                  ['perimeter_crofton', 0.2, 1]]
+    '''
+    out_filter = [['curvature_mean()', 0.1, 1],
+                  ['perimeter_crofton', 0.2, 1]]
     no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
-
+    '''
     criteria = [['area_filled', 'max', 1],
                 ['pixel_skew', 0, 1]]
+    '''
+    criteria = [['area_filled', 'max', 1],
+                ['roughness_surface', 'min', 1]]
+
     blobs_best = [blob_best(blobs, criteria) for blobs in no_outs]
 
     cv.imshow('1. original', im)
