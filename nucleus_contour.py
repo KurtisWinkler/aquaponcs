@@ -13,10 +13,12 @@ import matplotlib.pyplot as plt
 import contrast_function_scikit as cfs
 import blob_class as bc
 import cv2 as cv
+import sys
 
-input_name = 'test_2.jpg'
+
+input_name = 'test_3.jpg'
 output_name_contrast = 'contrasted_image.png'
-output_name = 'new_test_2.png'
+output_name = 'new_test_3.png'
 
 
 def store_evolution_in(L):
@@ -42,10 +44,12 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     output_name: a str name of the final image with the contour drawn
     
     '''
-    
+    sys.setrecursionlimit(1500)
+    print(sys.getrecursionlimit())
+
     contrast_image = cfs.percentile_rescale(input_name, 0.5, 99.5, output_name_contrast)
 
-    img = io.imread(contrast_image)
+    img = io.imread(output_name_contrast)
     img = rgb2gray(img)
 
     # Initial level set
@@ -69,38 +73,36 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     # ent_ax.imshow(entropy_image, cmap = 'magma')
     # plot = plt.savefig('entropy_image.png', bbox_inches='tight')
     
-    snake = morphological_chan_vese(img, num_iter=70, init_level_set=init_ls,
-                             smoothing=10, iter_callback=callback)
+    snake = morphological_chan_vese(img, num_iter=30, init_level_set=init_ls,
+                             smoothing=4, iter_callback=callback)
 
-    #print('max:', np.max(snake))
     fig, ax = plt.subplots(figsize=(7, 7))
     
     ax.imshow(img, cmap="gray")
     ax.set_axis_off()
-    ax.contour(snake, [1], colors='r')
+    ax.contour(snake, [.5], colors='r')
     
-    ax.plot(init_ls[:, 1], init_ls[:, 0], '--r', lw=3)
+    #ax.plot(init_ls[:, 1], init_ls[:, 0], '--r', lw=3)
 
     plot = plt.savefig(output_name, bbox_inches='tight')
     
-    cs = ax.contour(snake, [1])
+    cs = ax.contour(snake, [.5])
     p = cs.collections[0].get_paths()[0]
     v = p.vertices
     xs = v[:,0]
     ys = v[:,1]
-    contour = [[int(xs[i]),int(ys[i])] for i in range(len(xs)-1)]
-    #contour = np.array([[pt] for pt in contour])
-    ## Return as an array of arrays where each array is a point where the snake exists
+    contour = [(int(xs[i]),int(ys[i])) for i in range(len(xs)-1)]
+    # Return as an array of arrays where each array is a point where the snake exists
     
-    return output_name, snake, contour
+    return output_name, contour
 
 if __name__ == '__main__':
-    output_name, snake,  contour = nucleus_contour(input_name, output_name_contrast, output_name)
+    output_name, contour = nucleus_contour(input_name, output_name_contrast, output_name)
     #print('snake' + str(snake))
     #contour = [[snake[i, 1], snake[i, 0]] for i in range(len(snake[:,0]))]
     #fig, ax = plt.subplots(figsize=(7, 7))
     #contour = ax.contour(snake, [0.5])
-    print(contour)
+    print(np.shape(contour))
     Nuc_blob = bc.Blob(contour, input_name)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
