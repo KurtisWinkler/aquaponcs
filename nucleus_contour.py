@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import contrast_function_scikit as cfs
 import blob_class as bc
 import cv2 as cv
-import sys
 
 
 input_name = 'test_3.jpg'
@@ -44,8 +43,6 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     output_name: a str name of the final image with the contour drawn
     
     '''
-    sys.setrecursionlimit(1500)
-    print(sys.getrecursionlimit())
 
     contrast_image = cfs.percentile_rescale(input_name, 0.5, 99.5, output_name_contrast)
 
@@ -98,11 +95,11 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
 
 if __name__ == '__main__':
     output_name, contour = nucleus_contour(input_name, output_name_contrast, output_name)
-    #print('snake' + str(snake))
-    #contour = [[snake[i, 1], snake[i, 0]] for i in range(len(snake[:,0]))]
-    #fig, ax = plt.subplots(figsize=(7, 7))
-    #contour = ax.contour(snake, [0.5])
-    print(np.shape(contour))
+    # print('snake' + str(snake))
+    # contour = [[snake[i, 1], snake[i, 0]] for i in range(len(snake[:,0]))]
+    # fig, ax = plt.subplots(figsize=(7, 7))
+    # contour = ax.contour(snake, [0.5])
+    # print(np.shape(contour))
     Nuc_blob = bc.Blob(contour, input_name)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)

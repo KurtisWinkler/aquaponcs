@@ -6,7 +6,7 @@ from skimage.measure._regionprops import RegionProperties
 from scipy.stats import skew, kurtosis
 from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
-
+from skimage import io
 
 class Blob(RegionProperties):
     """
@@ -102,7 +102,7 @@ class Blob(RegionProperties):
 
     def __init__(self, contour, orig_image):
         contour = np.array(contour)
-        
+
         # if opencv contour, remove double brackets
         if len(contour.shape) == 3 and contour.shape[1] == 1:
             self.cv_contour = contour.copy()
@@ -111,15 +111,13 @@ class Blob(RegionProperties):
             self.cv_contour = np.array([[pt] for pt in contour])
 
         self.contour = contour
-        self.orig_image = orig_image
-        
+        self.orig_image = io.imread(orig_image)
         self.label_im = label(self.image_mask)
-        
         sl = ndi.find_objects(self.label_im)
         super().__init__(slice = sl[0],  # take only slice from list
                          label = 1,  # only one slice
                          label_image = self.label_im,
-                         intensity_image = orig_image,
+                         intensity_image = self.orig_image,
                          cache_active = False)
     
     # ALWAYS USE area_filled and perimeter_crofton for accurate results
