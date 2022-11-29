@@ -18,7 +18,7 @@ import cv2 as cv
 input_name = 'test_3.jpg'
 output_name_contrast = 'contrasted_image.png'
 output_name = 'new_test_3.png'
-
+image = io.imread(input_name)
 
 def store_evolution_in(L):
     """Returns a callback function to store the evolution of the level sets in
@@ -30,10 +30,11 @@ def store_evolution_in(L):
 
     return store
 
-def nucleus_contour(input_name, output_name_contrast, output_name):
+def nucleus_contour(image, input_name, output_name_contrast, output_name):
     '''
     Inputs:
     -------
+    image: a matrix of the desired image
     input_name: a str name of an input image file
     output_name_contrast: a str name of the contrasted output image
     output_name: a str name of the final output image with contour
@@ -45,9 +46,8 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     '''
 
     contrast_image = cfs.percentile_rescale(input_name, 0.5, 99.5, output_name_contrast)
-
-    img = io.imread(output_name_contrast)
-    img = rgb2gray(img)
+    image_cont = io.imread(output_name_contrast)
+    img = rgb2gray(image_cont)
 
     # Initial level set
     
@@ -94,12 +94,7 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     return output_name, contour
 
 if __name__ == '__main__':
-    output_name, contour = nucleus_contour(input_name, output_name_contrast, output_name)
-    # print('snake' + str(snake))
-    # contour = [[snake[i, 1], snake[i, 0]] for i in range(len(snake[:,0]))]
-    # fig, ax = plt.subplots(figsize=(7, 7))
-    # contour = ax.contour(snake, [0.5])
-    # print(np.shape(contour))
-    Nuc_blob = bc.Blob(contour, input_name)
+    output_name, contour = nucleus_contour(image, input_name, output_name_contrast, output_name)
+    Nuc_blob = bc.Blob(contour, image)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
