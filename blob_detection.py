@@ -7,6 +7,7 @@ flatten - Recursively flattens a nested list into a 1d list
 blob_im - Draws blob contours on an image
 get_maxima - Returns local maxima of blob/image
 get_contours - Returns contours of image
+segment_contours - segments contours based on maxima
 maxima_filter - Returns maxima if contour contains 1 maxima
 blob_filter - Returns True if blob conforms to specified filters
 similar_filter - Returns most similar blobs in a list of blobs
@@ -120,6 +121,9 @@ def get_maxima(image, distance=20, threshold=0.8):
 
     if not isinstance(threshold, (int, float)):
         raise TypeError('threshold must be int or float')
+        
+    if not (distance >= 0):
+        raise IndexError('distane must be >= 0')
 
     if threshold > 1 or threshold < 0:
         raise IndexError('threshold must be 0 <= threshold <= 1')
@@ -170,6 +174,27 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
     contours : list of numpy ndarrays
         A list of contours
     """
+    if not isinstance(image, (list, np.ndarray)):
+        raise TypeError('image must be a list or numpy array')
+        
+    if not isinstance(thresh_min, int):
+        raise TypeError('thresh_min must be an int')
+        
+    if not isinstance(thresh_max, int):
+        raise TypeError('thresh_max must be an int')
+        
+    if not isinstance(thresh_step, int):
+        raise TypeError('thresh_step must be an int')
+        
+    if not (thresh_min >= 0 and thresh_min <= thresh_max):
+        raise IndexError('thresh_min must be 0 <= thresh_min <= thresh_max')
+                         
+    if not (thresh_max >= thresh_min and thresh_max <= 255):
+        raise IndexError('thresh_max must be thresh_min <= thresh_max <= 255')
+        
+    if not (thresh_step >= 1 and thresh_step <= thresh_max):
+        raise IndexError('thresh_step must be 1 <= thresh_step <= thresh_max')
+    
     im_thresh = [cv.threshold(image, i, 255, cv.THRESH_BINARY)[1]
                  for i in range(thresh_min, thresh_max, thresh_step)]
 
@@ -197,6 +222,9 @@ def segment_contours(binary_image):
     contours : list of numpy ndarrays
         A list of contours
     """
+    if not isinstance(binary_image, (list, np.ndarray)):
+        raise TypeError('image must be a list or numpy array')
+    
     # apply distance transform
     distance = ndi.distance_transform_edt(binary_image)
 
