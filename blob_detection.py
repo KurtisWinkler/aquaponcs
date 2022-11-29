@@ -123,7 +123,7 @@ def get_maxima(image, distance=20, threshold=0.8):
         raise TypeError('threshold must be int or float')
         
     if not (distance >= 0):
-        raise IndexError('distane must be >= 0')
+        raise IndexError('distance must be >= 0')
 
     if threshold > 1 or threshold < 0:
         raise IndexError('threshold must be 0 <= threshold <= 1')
