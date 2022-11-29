@@ -124,9 +124,11 @@ class TestBlobDetection(unittest.TestCase):
         maxima = [blob.centroid_xy for blob in self.blobs]
         
         for i in range(len(maxima)):
-            real = (maxima[i], i)
+            real = (np.array([maxima[i]]), np.array([i]))
             test = bd.maxima_filter(contours[i], maxima)
-            self.assertEqual(real, test)
+            self.assertEqual(real[0][0][0], test[0][0][0])  # x-coord
+            self.assertEqual(real[0][0][1], test[0][0][1])  # y-coord
+            self.assertEqual(real[1], test[1])  # index
     
     # ***Test blob_filter***
     def test_blob_filter_error(self):
