@@ -14,11 +14,9 @@ import contrast_function_scikit as cfs
 import blob_class as bc
 import cv2 as cv
 
-
-input_name = 'test_3.jpg'
-output_name_contrast = 'contrasted_image.png'
-output_name = 'new_test_3.png'
-image = io.imread(input_name)
+input_name = 'test_image.jpeg'
+output_name_contrast = 'contrasted_image.jpeg'
+output_name = 'unit_test.jpeg'
 
 def store_evolution_in(L):
     """Returns a callback function to store the evolution of the level sets in
@@ -30,7 +28,7 @@ def store_evolution_in(L):
 
     return store
 
-def nucleus_contour(image, input_name, output_name_contrast, output_name):
+def nucleus_contour(input_name, output_name_contrast, output_name):
     '''
     Inputs:
     -------
@@ -51,7 +49,8 @@ def nucleus_contour(image, input_name, output_name_contrast, output_name):
 
     # Initial level set
     
-    init_ls = checkerboard_level_set(np.shape(img),10)
+    #init_ls = disk_level_set(np.shape(img))
+    init_ls = checkerboard_level_set(np.shape(img), 5)
     
     # List with intermediate results for plotting the evolution
     
@@ -70,8 +69,8 @@ def nucleus_contour(image, input_name, output_name_contrast, output_name):
     # ent_ax.imshow(entropy_image, cmap = 'magma')
     # plot = plt.savefig('entropy_image.png', bbox_inches='tight')
     
-    snake = morphological_chan_vese(img, num_iter=30, init_level_set=init_ls,
-                             smoothing=4, iter_callback=callback)
+    snake = morphological_chan_vese(img, num_iter=70, init_level_set=init_ls,
+                             smoothing=3, iter_callback=callback)
 
     fig, ax = plt.subplots(figsize=(7, 7))
     
@@ -79,22 +78,36 @@ def nucleus_contour(image, input_name, output_name_contrast, output_name):
     ax.set_axis_off()
     ax.contour(snake, [.5], colors='r')
     
-    #ax.plot(init_ls[:, 1], init_ls[:, 0], '--r', lw=3)
-
     plot = plt.savefig(output_name, bbox_inches='tight')
     
-    cs = ax.contour(snake, [.5])
-    p = cs.collections[0].get_paths()[0]
-    v = p.vertices
-    xs = v[:,0]
-    ys = v[:,1]
-    contour = [(int(xs[i]),int(ys[i])) for i in range(len(xs)-1)]
-    # Return as an array of arrays where each array is a point where the snake exists
+    contours = ax.contour(snake, [.5])
     
-    return output_name, contour
+    # Finding the longest path to avoid small contours on image noise
+    
+    paths = []
+    for path in contours.collections[0].get_paths():
+        paths.append(path)
+        
+    lengths = []
+    for path in paths:
+        lengths.append(len(path))
+        
+    max_length = max(lengths)
+    
+    path_idx = lengths.index(max_length)
+    
+    cell_path = paths[path_idx]
+    vertices = cell_path.vertices
+    xs = vertices[:,0]
+    ys = vertices[:,1]
+    contour = [(int(xs[i]),int(ys[i])) for i in range(len(xs)-1)]
+    
+    
+    return output_name, contour, img
 
 if __name__ == '__main__':
-    output_name, contour = nucleus_contour(image, input_name, output_name_contrast, output_name)
-    Nuc_blob = bc.Blob(contour, image)
+    output_name, contour, img = nucleus_contour(input_name, output_name_contrast, output_name)
+    #print(contour)
+    Nuc_blob = bc.Blob(contour, img)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)

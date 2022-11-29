@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io, exposure, data
 from PIL import Image as im
+import sys
 
 # contour detection documentation
 # https://danielmuellerkomorowska.com/2020/06/27/contrast-adjustment-with-scikit-image/
