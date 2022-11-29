@@ -101,6 +101,13 @@ class Blob(RegionProperties):
     """
 
     def __init__(self, contour, orig_image):
+
+        if not isinstance(contour, (list, np.ndarray)):
+            raise TypeError('contour must be list or numpy array')
+            
+        if not isinstance(orig_image, np.ndarray):
+            raise TypeError('orig_image must be a numpy array')
+        
         contour = np.array(contour)
         
         # if opencv contour, remove double brackets
@@ -126,16 +133,19 @@ class Blob(RegionProperties):
     
     @property
     def aspect_ratio(self):
+        """Return aspect ratio as float"""
         return self.axis_major_length / self.axis_minor_length
     
     @property
     def centroid_xy(self):
+        """Return centroid as tuple of numpy.float64"""
         centroid = self.centroid
         # return x,y instead of default y,x
         return centroid[1], centroid[0]
 
     @property
     def circularity(self):
+        """Return circularity as numpy.float64"""
         area = self.area_filled
         perimeter = self.perimeter_crofton
         circularity = (4 * math.pi * area) / pow(perimeter, 2)
@@ -143,6 +153,7 @@ class Blob(RegionProperties):
         return min(circularity, 1)
 
     def curvature(self, num_space=5):
+        """Return curvature at each contour point as numpy.ndarray"""
         
         def gradient_spaced(L, num):
             grad = np.array([(L[i+num] - L[i-num])/(num*2) for i in range(-num,len(L)-num)])
@@ -173,16 +184,20 @@ class Blob(RegionProperties):
         return curvature
 
     def curvature_mean(self, num=5):
+        """Return curvature mean as numpy.float64"""
         return np.mean(self.curvature(num))
     
     @property
     def ellipse_fit_residual(self):
-        ''' Fits the contour to an ellipse, then returns the mean
-            residuals (shortest distance of contour point to 
-            ellipse model)
+        """ 
+        Returns residual of ellipse fit at each contour point as numpy.ndarray
+        
+        Fits the contour to an ellipse, then returns the mean
+        residuals (shortest distance of contour point to 
+        ellipse model)
             
-            This estimates how well the contour fits an ellipse model
-            '''
+        This estimates how well the contour fits an ellipse model
+        """
         
         contour = self.contour
         ellipse = EllipseModel()
@@ -190,12 +205,13 @@ class Blob(RegionProperties):
         # Estimate needed to get params for ellipse, returns True if succeeds
         if ellipse.estimate(contour):
             residuals = ellipse.residuals(contour)
-            return np.mean(residuals)
+            return residuals
         else:
             return None
         
     @property
     def ellipse_fit_residual_mean(self):
+        """Return mean of residuals as numpy.float64"""
         efr = self.ellipse_fit_residual
         if efr is not None:
             return np.mean(efr)
@@ -204,37 +220,42 @@ class Blob(RegionProperties):
 
     @property
     def image_convex_bbox(self):
+        """Return convex image bbox as numpy.ndarray"""
         im = self.image_convex.astype(np.uint8)
         im[im == 1] = 255
         return im
     
     @property
     def image_mask(self):
+        """Return image with contour as mask as numpy.ndarray"""
         mask = np.zeros(self.orig_image.shape[0:2], np.uint8)
         cv.fillPoly(mask, pts=[self.contour], color=(255, 255, 255))
         return mask
     
     @property
     def image_mask_bbox(self):
+        """Return image with contour as mask in bbox as numpy.ndarray"""
         im = self.image.astype(np.uint8)
         im[im == 1] = 255
         return im
     
     @property
     def image_masked(self):
-        '''Original image with mask'''
+        """Return original image with contour as mask as numpy.ndarray"""
         return cv.bitwise_and(self.orig_image,
                               self.orig_image,
                               mask=self.image_mask)
     
     @property
     def perimeter_convex_hull(self):
+        """Return perimeter of convex hull as numpy.float64"""
         convex_label = label(self.image_convex)
         convex_perimeter = regionprops(convex_label)[0]['perimeter_crofton']
         return max(convex_perimeter, 1)
     
     @property
     def pixel_intensities(self):
+        """Return grayscale pixel intensites of area inside contour as numpy.ndarray"""
         coords = np.where(self.image_mask == 255)
         if self.orig_image.ndim > 2:
             image_gray = cv.cvtColor(self.image_masked, cv.COLOR_BGR2GRAY)
@@ -243,37 +264,45 @@ class Blob(RegionProperties):
 
     @property
     def pixel_intensity_mean(self):
+        """Return mean of pixel intensities as numpy.float64"""
         return np.mean(self.pixel_intensities)
 
     @property
     def pixel_intensity_median(self):
+        """Return median of pixel intensities as numpy.float64"""
         return np.median(self.pixel_intensities)
     
     def pixel_intensity_percentile(self, percentile=75):
+        """Return pixel intensity of specified percentile as numpy.uint8"""
         pixel_sort = np.sort(self.pixel_intensities)
         idx = int(percentile/100*len(pixel_sort))
         return pixel_sort[idx]
 
     @property
     def pixel_intensity_std(self):
+        """Return standard deviation of pixel intensities as numpy.float64"""
         return np.std(self.pixel_intensities)
 
     @property
     def pixel_kurtosis(self):
+        """Return kurtosis of pixel intensities as float"""
         return kurtosis(self.pixel_intensities, fisher=True, bias=False)
 
     @property
     def pixel_skew(self):
+        """Return skew of pixel intensities as float"""
         return skew(self.pixel_intensities, bias=False, nan_policy='omit')
     
     @property
     def roughness_perimeter(self):
+        """Return perimeter roughness as numpy.float64"""
         roughness = self.perimeter_crofton / self.perimeter_convex_hull
         # perimeter roughness cannot be less than 1 (rounding errors)
         return max(roughness, 1)
     
     @property
     def roughness_surface(self):
+        """Return surface roughness as numpy.float64"""
         pixels = self.pixel_intensities
         mean = self.pixel_intensity_mean
         diff = [abs(px-mean) for px in pixels]
@@ -281,6 +310,7 @@ class Blob(RegionProperties):
 
     @property
     def roundness(self):
+        """Return roundness as numpy.float64"""
         num = 4 * self.area_filled
         den = math.pi * pow(self.axis_major_length, 2)
         return num / den
