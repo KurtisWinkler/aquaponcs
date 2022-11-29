@@ -184,7 +184,7 @@ class Blob(RegionProperties):
         return curvature
 
     def curvature_mean(self, num=5):
-        """Return curvature mean as numpy.float64"""
+        """Return mean of curvature as numpy.float64"""
         return np.mean(self.curvature(num))
     
     @property
