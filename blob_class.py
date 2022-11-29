@@ -111,7 +111,7 @@ class Blob(RegionProperties):
             self.cv_contour = np.array([[pt] for pt in contour])
 
         self.contour = contour
-        self.orig_image = io.imread(orig_image)
+        self.orig_image = orig_image
         self.label_im = label(self.image_mask)
         sl = ndi.find_objects(self.label_im)
         super().__init__(slice = sl[0],  # take only slice from list
