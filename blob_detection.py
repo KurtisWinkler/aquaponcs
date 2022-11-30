@@ -123,7 +123,7 @@ def get_maxima(image, distance=20, threshold=0.8):
         raise TypeError('threshold must be int or float')
         
     if not (distance >= 0):
-        raise IndexError('distane must be >= 0')
+        raise IndexError('distance must be >= 0')
 
     if threshold > 1 or threshold < 0:
         raise IndexError('threshold must be 0 <= threshold <= 1')
@@ -205,10 +205,11 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
 
     contours = [contour for contours in contours_nested
                 for contour in contours]
+
     return contours
 
 
-def segment_contours(binary_image):
+def segment_contours(binary_image, min_distance=10):
     """
     Segments binary image and returns list of contours
 
@@ -216,6 +217,9 @@ def segment_contours(binary_image):
     ----------
     binary_image : numpy ndarray
         Image to find contours in
+        
+    min_distance : int
+        Minimum distance between peaks of segmented image
 
     Returns
     -------
@@ -224,13 +228,19 @@ def segment_contours(binary_image):
     """
     if not isinstance(binary_image, (list, np.ndarray)):
         raise TypeError('image must be a list or numpy array')
+        
+    if not isinstance(min_distance, int):
+        raise TypeError('min_distance must be an int')
+    
+    if not (min_distance >= 0):
+        raise IndexError('min_distance must be >= 0')
     
     # apply distance transform
     distance = ndi.distance_transform_edt(binary_image)
 
     # find maximum coordinates and label on mask
     coords = peak_local_max(distance,
-                            min_distance=10,
+                            min_distance=min_distance,
                             footprint=np.ones((3, 3)),
                             labels=binary_image)
     mask = np.zeros(distance.shape, dtype=bool)

@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import cv2 as cv
+from scipy import ndimage as ndi
 import blob_class as bc
 import blob_detection as bd
 
@@ -35,15 +36,11 @@ class TestBlobDetection(unittest.TestCase):
         # create circle 1
         center_coordinates = (150, 200)
         radius = 50
-        color = (255, 255, 255)
-        thickness = -1
         cv.circle(im, center_coordinates, radius, color, thickness)
         
         # create circle 2
         center_coordinates = (350, 150)
         radius = 35
-        color = (255, 255, 255)
-        thickness = -1
         cv.circle(im, center_coordinates, radius, color, thickness)
 
         cls.im_shapes = im.copy()
@@ -60,7 +57,26 @@ class TestBlobDetection(unittest.TestCase):
         cls.blobs = [bc.Blob(contour, im) for contour in contours]
         # for blob in cls.blobs:
         #     print(blob.area)
+        
+        im2 = np.zeros((512,512,3), dtype='uint8')
 
+        # create circle 1
+        center_coordinates = (225, 200)
+        radius = 60
+        cv.circle(im2, center_coordinates, radius, color, thickness)
+        
+        # create overlapping circle 2
+        center_coordinates = (300, 150)
+        radius = 75
+        cv.circle(im2, center_coordinates, radius, color, thickness)
+
+        cls.im_overlap = cv.cvtColor(im2, cv.COLOR_BGR2GRAY).copy()
+        
+        cls.im_maxima = ndi.distance_transform_edt(cls.im_overlap)
+        
+        contour, _ = cv.findContours(cls.im_overlap, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+        cls.overlap_blob = bc.Blob(contour[0], cls.im_maxima)
+        
     @classmethod
     def tearDownClass(cls):
         cls.im_zeros = None
@@ -68,7 +84,10 @@ class TestBlobDetection(unittest.TestCase):
         cls.im_contours = None
         cls.contours = None
         cls.blobs = None
-
+        cls.im_overlap = None
+        cls.im_maxima = None
+        cls.overlap_blob = None
+        
     #***Test flatten***
     def test_flatten_error(self):
         # TypeError if L (input 1) not list
@@ -104,7 +123,85 @@ class TestBlobDetection(unittest.TestCase):
         test1 = bd.blob_im(self.im_shapes, self.blobs)
         self.assertEqual(np.all(real1==test1), True)
         self.assertNotEqual(np.all(self.im_shapes==test1), True)
-    
+
+    #***Test get_maxima***
+    def test_get_maxima_error(self):
+        # TypeError if image (input 1) not numpy array or blob
+        self.assertRaises(TypeError, bd.get_maxima, 'blob', 20, 0.8)
+        
+        # TypeError if distance (input 2) not int
+        self.assertRaises(TypeError, bd.get_maxima, self.overlap_blob, 10.5, 0.8)
+        
+        # TypeError if threshold (input 3) not int or float
+        self.assertRaises(TypeError, bd.get_maxima, self.overlap_blob, 10.5, 'a')
+        
+        # IndexError if distance < 0
+        self.assertRaises(IndexError, bd.get_maxima, self.overlap_blob, -1, 0.8)
+        
+        # IndexError if threshold not 0 <= threshold <= 1
+        self.assertRaises(IndexError, bd.get_maxima, self.overlap_blob, 10, 1.2)
+        
+    def test_get_maxima_fixed(self):
+        # local maxima points (centers of overlapping blobs)
+        real = [[300, 150], [225, 200]]
+        
+        # test blob input
+        test1 = bd.get_maxima(self.overlap_blob, 20, 0.8)
+        self.assertEqual(real, test1)
+        
+        # test image input
+        test2 = bd.get_maxima(self.im_maxima, 20, 0.8)
+        self.assertEqual(real, test2)       
+
+    #***Test get_contours***
+    def test_get_contours_error(self):
+        # TypeError if image (input 1) not list of numpy array
+        self.assertRaises(TypeError, bd.get_contours, 'blob', 20, 255, 10)
+        
+        # TypeError if thresh_min (input 2) not int
+        self.assertRaises(TypeError, bd.get_contours, self.im_shapes, 8.5, 255, 10)
+        
+        # TypeError if thresh_max (input 3) not int
+        self.assertRaises(TypeError, bd.get_contours, self.im_shapes, 20, 245.5, 10)
+        
+        # TypeError if thresh_step (input 4) not int
+        self.assertRaises(TypeError, bd.get_contours, self.im_shapes, 20, 255, 8.5)
+        
+        # IndexError if not 0 <= thresh_min <= thresh_max <= 255
+        self.assertRaises(IndexError, bd.get_contours, self.im_shapes, -5, 255, 10)
+        self.assertRaises(IndexError, bd.get_contours, self.im_shapes, 65, 55, 10)
+        self.assertRaises(IndexError, bd.get_contours, self.im_shapes, 20, 265, 10)
+        
+        # IndexError if not 1 <= thresh_step <= thresh_max
+        self.assertRaises(IndexError, bd.get_contours, self.im_shapes, 20, 255, -5)
+        self.assertRaises(IndexError, bd.get_contours, self.im_shapes, 20, 110, 125)
+        
+    def test_get_contours_fixed(self):
+        # number of contours that should be found
+        real = 4 * 5  # num blobs * iterating 5 times to find contours
+
+        im_shapes_gray = cv.cvtColor(self.im_shapes, cv.COLOR_BGR2GRAY)
+        test = bd.get_contours(im_shapes_gray, 20, 110, 20)  # iterates 5 times
+        self.assertEqual(real, len(test)) 
+
+    #***Test segment_contours***
+    def test_segment_contours_error(self):
+        # TypeError if binary_image (input 1) not list of numpy array
+        self.assertRaises(TypeError, bd.segment_contours, 'blob', 10)
+        
+        # TypeError if min_distance (input 2) not int
+        self.assertRaises(TypeError, bd.segment_contours, self.im_overlap, 10.5)
+        
+        # IndexError if min_distance < 0
+        self.assertRaises(IndexError, bd.segment_contours, self.im_overlap, -4)
+        
+    def test_segment_contours_fixed(self):
+        # number of contours that should be found
+        real = 2  # overlap_blob should segment into 2 blobs
+
+        test = bd.segment_contours(self.im_overlap, 50)
+        self.assertEqual(real, len(test))         
+
     # ***Test maxima_filter***
     def test_maxima_filter_error(self):
         # TypeError if contour (input 1) not list or numpy array
@@ -124,9 +221,11 @@ class TestBlobDetection(unittest.TestCase):
         maxima = [blob.centroid_xy for blob in self.blobs]
         
         for i in range(len(maxima)):
-            real = (maxima[i], i)
+            real = (np.array([maxima[i]]), np.array([i]))
             test = bd.maxima_filter(contours[i], maxima)
-            self.assertEqual(real, test)
+            self.assertEqual(real[0][0][0], test[0][0][0])  # x-coord
+            self.assertEqual(real[0][0][1], test[0][0][1])  # y-coord
+            self.assertEqual(real[1], test[1])  # index
     
     # ***Test blob_filter***
     def test_blob_filter_error(self):
