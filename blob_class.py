@@ -108,6 +108,9 @@ class Blob(RegionProperties):
 
         if not isinstance(orig_image, np.ndarray):
             raise TypeError('orig_image must be a numpy array')
+            
+        if orig_image.dtype is not np.uint8:
+            orig_image = orig_image.astype('uint8')
 
         contour = np.array(contour)
 

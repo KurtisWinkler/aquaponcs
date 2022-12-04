@@ -240,6 +240,7 @@ def segment_contours(binary_image, min_distance=10):
 
     # find maximum coordinates and label on mask
     coords = peak_local_max(distance,
+                            threshold_rel=0.8, #play around with
                             min_distance=min_distance,
                             footprint=np.ones((3, 3)),
                             labels=binary_image)
@@ -349,11 +350,11 @@ def blob_filter(blob, filters):
 
     for filt in filters:
 
-        if filt[1]:
+        if filt[1] is not None:
             if not (eval('blob.' + filt[0]) >= filt[1]):
                 return False
 
-        if filt[2]:
+        if filt[2] is not None:
             if not (eval('blob.' + filt[0]) <= filt[2]):
                 return False
 
