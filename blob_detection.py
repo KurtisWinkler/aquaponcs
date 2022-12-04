@@ -240,7 +240,7 @@ def segment_contours(binary_image, min_distance=10):
 
     # find maximum coordinates and label on mask
     coords = peak_local_max(distance,
-                            threshold_rel=0.8, #play around with
+                            threshold_rel=0.5, #play around with
                             min_distance=min_distance,
                             footprint=np.ones((3, 3)),
                             labels=binary_image)
@@ -622,100 +622,3 @@ def blob_best(blob_list, criteria):
 
     # Return highest scoring blob
     return blob_list[max_idx]
-
-
-def main():
-    """
-    Strategy for finding blobs
-    --------------------------
-    1. Find maxima in image
-    2. Find contours that only contain a single maxima
-    3. Keep contours that conform to specific parameters
-    4. Keep the most similar blobs/contours for each maxima
-    5. Remove outlier blobs/contours
-    6. Keep blob with highest score
-    """
-    im = cv.imread('ex6.tif')
-    im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-    im_blur = cv.GaussianBlur(im_gray,(15,15),0)
-
-    '''example mask for finding nuclues -> now to find blobs'''
-    ret, im_binary = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
-    contours, hierarchy = cv.findContours(im_binary,
-                                          cv.RETR_EXTERNAL,
-                                          cv.CHAIN_APPROX_NONE)
-    contour = max(contours, key=cv.contourArea)
-    blob_blur = bc.Blob(contour, im_blur)
-
-    local_max_coords = get_maxima(blob_blur, distance=4, threshold=0.85)
-
-    im_maxima = im.copy()
-    for coordinate in local_max_coords:
-        cv.circle(im_maxima, (coordinate), 2, (255, 0, 0), 2)
-
-    min_thresh = int(blob_blur.pixel_intensity_median)
-    contours = get_contours(im_blur, min_thresh)
-
-    contour_list = [[] for i in range(len(local_max_coords))]
-    if len(contours) > 0:
-        for contour in contours:
-            keys, key_idxs = maxima_filter(contour, local_max_coords)
-            if keys is not None:
-                if len(keys) == 1:
-                    contour_list[key_idxs[0]].append(bc.Blob(contour, im))
-
-                else: # if len(keys) > 1
-                    seg_binary = np.zeros(im_gray.shape, dtype="uint8")
-                    cv.fillPoly(seg_binary, pts=[contour], color=(255,255,255))
-                    seg_contours = segment_contours(seg_binary)
-                    for sc in seg_contours:
-                        keys, key_idxs = maxima_filter(sc, local_max_coords)
-                        if keys is not None:
-                            if len(keys) == 1:
-                                contour_list[key_idxs[0]].append(bc.Blob(sc, im))
-
-    filters = [['area_filled', 25, None],  # at least 0.05% of nucleus area
-               ['ellipse_fit_residual_mean', None, 2]]
-
-    blob_list = []
-    for contours in contour_list:
-        blob_list.append([x for x in contours if blob_filter(x, filters)])
-
-    params = [['aspect_ratio', 0.2],
-              ['solidity', 0.1],
-              ['roughness_perimeter', 0.1],
-              ['circularity', 0.2]]
-
-    sim_blobs = [similar_filter(blobs, params, 2) for blobs in blob_list]
-    sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
-
-    '''
-    out_filter = [['area_filled', 0.5, 1.5],
-                  ['curvature_mean()', 0.1, 1.25],
-                  ['circularity', 0.1, 1.25],
-                  ['perimeter_crofton', 0.2, 1]]
-    '''
-    out_filter = [['curvature_mean()', 0.1, 1],
-                  ['perimeter_crofton', 0.2, 1]]
-    no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
-    '''
-    criteria = [['area_filled', 'max', 1],
-                ['pixel_skew', 0, 1]]
-    '''
-    criteria = [['area_filled', 'max', 1],
-                ['roughness_surface', 'min', 1]]
-
-    blobs_best = [blob_best(blobs, criteria) for blobs in no_outs]
-
-    cv.imshow('1. original', im)
-    cv.imshow('2. peak local maxima', im_maxima)
-    cv.imshow('3. maxima contours', blob_im(im, contour_list))
-    cv.imshow('4. filtered contours', blob_im(im, blob_list))
-    cv.imshow('5. similar blobs', blob_im(im, sim_blobs))
-    cv.imshow('6 no outliers', blob_im(im, no_outs))
-    cv.imshow('7 final contours', blob_im(im, blobs_best))
-    cv.waitKey()
-
-
-if __name__ == '__main__':
-    main()
