@@ -8,11 +8,13 @@ blob_im - Draws blob contours on an image
 get_maxima - Returns local maxima of blob/image
 get_contours - Returns contours of image
 segment_contours - segments contours based on maxima
+organize_contours - organizes contours based on maxima
 maxima_filter - Returns maxima if contour contains 1 maxima
 blob_filter - Returns True if blob conforms to specified filters
 similar_filter - Returns most similar blobs in a list of blobs
 outlier_filter - Removes outliers from list of blobs
 blob_best - Returns blob with highest score out of a list of blobs
+final_blobs_filter - Removes overlapping, unnessessary blobs
 """
 
 import blob_class as bc
@@ -226,8 +228,8 @@ def segment_contours(binary_image, min_distance=10):
     contours : list of numpy ndarrays
         A list of contours
     """
-    if not isinstance(binary_image, (list, np.ndarray)):
-        raise TypeError('image must be a list or numpy array')
+    if not isinstance(binary_image, np.ndarray):
+        raise TypeError('binary_image must be a numpy array')
 
     if not isinstance(min_distance, int):
         raise TypeError('min_distance must be an int')
@@ -270,11 +272,11 @@ def organize_contours(contours, coords, image, min_distance):
 
     Parameters
     ----------
-    contours : nested list
+    contours : nested list or numpy ndarray
         each inner list contains contour points
         contours to organize
 
-    coords : nester list
+    coords : nested list or numpy ndarray
         each inner list is an image coordinate
         coordinates to organize contours by
 
@@ -290,6 +292,21 @@ def organize_contours(contours, coords, image, min_distance):
         each inner list contains Blob instances
         Blob instances are organized by coordinates
     """
+    if not isinstance(contours, (list, tuple, np.ndarray)):
+        raise TypeError('contours must be a list, tuple, or numpy array')
+
+    if not isinstance(coords, (list, tuple, np.ndarray)):
+        raise TypeError('coords must be a list, tuple, or numpy array')
+
+    if not isinstance(image, np.ndarray):
+        raise TypeError('image must be a numpy array')
+
+    if not isinstance(min_distance, int):
+        raise TypeError('min_distance must be an int')
+
+    if not (min_distance >= 0):
+        raise IndexError('min_distance must be >= 0')
+
     # initalize empty list that will hold contours
     contour_list = [[] for pt in coords]
 
@@ -718,6 +735,12 @@ def final_blobs_filter(blobs):
     final_blobs : list
         Copy of blobs without unnessessary blobs
     """
+    if not isinstance(blobs, list):
+        raise TypeError('blob_list must be a list')
+
+    if not all((isinstance(blob, bc.Blob) for blob in blobs)):
+        raise TypeError('blob_list must only contain blobs')
+
     # get blob centers
     blob_centers = [[int(blob.centroid_xy[0]), int(blob.centroid_xy[1])]
                     for blob in blobs]
