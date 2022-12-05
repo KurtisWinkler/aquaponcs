@@ -422,7 +422,8 @@ def main():
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
-    print(blob.curvature())
+    print(blob.area_convex)
+    blob.print_properties()
     #plot_image(blob)
     '''
     cv.imshow('masked', blob.image_masked)
