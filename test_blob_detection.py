@@ -58,6 +58,7 @@ class TestBlobDetection(unittest.TestCase):
         # for blob in cls.blobs:
         #     print(blob.area)
         
+        # Create new image for overlapping blobs
         im2 = np.zeros((512,512,3), dtype='uint8')
 
         # create circle 1
@@ -77,6 +78,37 @@ class TestBlobDetection(unittest.TestCase):
         contour, _ = cv.findContours(cls.im_overlap, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
         cls.overlap_blob = bc.Blob(contour[0], cls.im_maxima)
         
+        # Create new image for blobs that are inside each other
+        im3 = np.zeros((512,512), dtype='uint8')
+        
+        # Inside circle 1
+        center_coordinates = (250, 200)
+        radius = 35
+        cv.circle(im3, center_coordinates, radius, color, thickness)
+
+        # Inside circle 2
+        center_coordinates = (200, 300)
+        radius = 50
+        cv.circle(im3, center_coordinates, radius, color, thickness)
+
+        # Inside circle contours
+        contours_in, _ = cv.findContours(im3, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+
+        # Outside circle
+        center_coordinates = (225, 250)
+        radius = 130
+        cv.circle(im3, center_coordinates, radius, color, thickness)
+
+        # Outside circle contours
+        contours_out, _ = cv.findContours(im3, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+
+        # All contours
+        contours_in_out = contours_in + contours_out
+        
+        # Blobs (idx 2 is outside blob)
+        cls.blobs_in_out = [bc.Blob(con, im3) for con in contours_in_out]
+        
+        
     @classmethod
     def tearDownClass(cls):
         cls.im_zeros = None
@@ -87,6 +119,7 @@ class TestBlobDetection(unittest.TestCase):
         cls.im_overlap = None
         cls.im_maxima = None
         cls.overlap_blob = None
+        cls.blobs_in_out = None
         
     #***Test flatten***
     def test_flatten_error(self):
@@ -155,7 +188,7 @@ class TestBlobDetection(unittest.TestCase):
 
     #***Test get_contours***
     def test_get_contours_error(self):
-        # TypeError if image (input 1) not list of numpy array
+        # TypeError if image (input 1) not list or numpy array
         self.assertRaises(TypeError, bd.get_contours, 'blob', 20, 255, 10)
         
         # TypeError if thresh_min (input 2) not int
@@ -201,6 +234,39 @@ class TestBlobDetection(unittest.TestCase):
 
         test = bd.segment_contours(self.im_overlap, 50)
         self.assertEqual(real, len(test))         
+
+        #***Test organize_contours***
+    def test_organize_contours_error(self):
+        im = self.im_shapes
+        con = self.contours
+        pts = [[1, 2], [5, 6]]
+        # TypeError if contours (input 1) not list, numpy array, or tuple
+        self.assertRaises(TypeError, bd.organize_contours, 'con', pts, im, 10)
+
+        # TypeError if coords (input 2) not list, numpy array, or tuple
+        self.assertRaises(TypeError, bd.organize_contours, con, 'pts', im, 10)
+
+        # TypeError if image (input 3) not numpy ndarray
+        self.assertRaises(TypeError, bd.organize_contours, con, pts, 'im', 10)
+
+        # TypeError if min_distance (input 4) not int
+        self.assertRaises(TypeError, bd.organize_contours, con, pts, im, 10.5)
+
+        # IndexError if min_distance >= 0
+        self.assertRaises(IndexError, bd.organize_contours, con, pts, im, -1)
+
+    def test_organize_contours_fixed(self):
+        im = self.im_shapes
+        con = self.contours
+        pts = [[250, 400], [450, 325], [150, 200], [350, 150], [500, 500]]
+        test = bd.organize_contours(con, pts, im, 10)
+
+        # each pt in pts should have one contour except last
+        for idx, org in enumerate(test):
+            if idx <= 3:
+                self.assertEqual(len(org), 1)
+            else:
+                self.assertEqual(len(org), 0)
 
     # ***Test maxima_filter***
     def test_maxima_filter_error(self):
@@ -354,7 +420,7 @@ class TestBlobDetection(unittest.TestCase):
         param3 = [['circularity', 'max', 2],
                  ['area', 0.5]]
         
-        # TypeError if blob_list (input 1) not instance of class Blob
+        # TypeError if blob_list (input 1) not instance of list
         self.assertRaises(TypeError, bd.blob_best, 'blob', param1)
         
         # TypeError if blob_list (input 1) not all blobs
@@ -382,5 +448,21 @@ class TestBlobDetection(unittest.TestCase):
         self.assertEqual(real1, test1)
         self.assertEqual(real2, test2)
         
+        # ***Test final_blobs_filter***
+    def test_final_blobs_filter_error(self):
+        # TypeError if blobs (input 1) not instance of list
+        self.assertRaises(TypeError, bd.final_blobs_filter, 'blobs')
+        
+        # TypeError if blobs (input 1) not all blobs
+        self.assertRaises(TypeError, bd.final_blobs_filter, [self.blobs, 'a'])
+        
+    def test_final_blobs_filter_fixed(self):
+        # blobs[0] and blobs[1] are inside blobs[2]
+        blobs = self.blobs_in_out
+        real = blobs[0:2]
+        test = bd.final_blobs_filter(blobs)
+        
+        self.assertEqual(real, test)
+
 if __name__ == '__main__':
     unittest.main()
