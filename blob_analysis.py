@@ -1,7 +1,9 @@
 import cv2 as cv
+import pandas as pd
 import blob_class as bc
 import blob_detection as bd
 import contrast_functions as cf
+import param_output as po
 
 # read in image and save
 im = cv.imread('ex1.tif')
@@ -101,3 +103,7 @@ final_blobs = bd.final_blobs_filter(blobs_best)
 
 # save image with final blob contours
 cv.imwrite('10_final_blobs.jpg', bd.blob_im(im_scaled, final_blobs))
+
+# get parameters of final blobs
+params = po.get_params(final_blobs)
+params.to_csv("blob_params.csv")
