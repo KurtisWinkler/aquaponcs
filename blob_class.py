@@ -108,7 +108,7 @@ class Blob(RegionProperties):
 
         if not isinstance(orig_image, np.ndarray):
             raise TypeError('orig_image must be a numpy array')
-            
+
         if orig_image.dtype is not np.uint8:
             orig_image = orig_image.astype('uint8')
 
@@ -190,6 +190,14 @@ class Blob(RegionProperties):
             return grad
 
         contour = self.contour
+
+        # curvature can't be calculated
+        if len(contour) < 4:
+            return np.zeros(len(contour))
+
+        # reduce num_space if contour small enough
+        if len(contour) < 50:
+            num_space = 1
 
         dx_dt = gradient_spaced(contour[:, 0], num_space)
         dy_dt = gradient_spaced(contour[:, 1], num_space)
@@ -414,7 +422,7 @@ def main():
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
-    blob.print_properties(2)
+    print(blob.curvature())
     #plot_image(blob)
     '''
     cv.imshow('masked', blob.image_masked)
