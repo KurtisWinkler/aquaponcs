@@ -75,5 +75,3 @@ class classTestNucContour(unittest.TestCase):
         self.assertTrue((1 - threshold) * calc_area 
                         <= contour_area <=
                         calc_area * (1 + threshold))
-
-        
