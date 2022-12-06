@@ -7,11 +7,14 @@ flatten - Recursively flattens a nested list into a 1d list
 blob_im - Draws blob contours on an image
 get_maxima - Returns local maxima of blob/image
 get_contours - Returns contours of image
+segment_contours - segments contours based on maxima
+organize_contours - organizes contours based on maxima
 maxima_filter - Returns maxima if contour contains 1 maxima
 blob_filter - Returns True if blob conforms to specified filters
 similar_filter - Returns most similar blobs in a list of blobs
 outlier_filter - Removes outliers from list of blobs
 blob_best - Returns blob with highest score out of a list of blobs
+final_blobs_filter - Removes overlapping, unnessessary blobs
 """
 
 import blob_class as bc
@@ -121,6 +124,9 @@ def get_maxima(image, distance=20, threshold=0.8):
     if not isinstance(threshold, (int, float)):
         raise TypeError('threshold must be int or float')
 
+    if not (distance >= 0):
+        raise IndexError('distance must be >= 0')
+
     if threshold > 1 or threshold < 0:
         raise IndexError('threshold must be 0 <= threshold <= 1')
 
@@ -170,6 +176,27 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
     contours : list of numpy ndarrays
         A list of contours
     """
+    if not isinstance(image, (list, np.ndarray)):
+        raise TypeError('image must be a list or numpy array')
+
+    if not isinstance(thresh_min, int):
+        raise TypeError('thresh_min must be an int')
+
+    if not isinstance(thresh_max, int):
+        raise TypeError('thresh_max must be an int')
+
+    if not isinstance(thresh_step, int):
+        raise TypeError('thresh_step must be an int')
+
+    if not (thresh_min >= 0 and thresh_min <= thresh_max):
+        raise IndexError('thresh_min must be 0 <= thresh_min <= thresh_max')
+
+    if not (thresh_max >= thresh_min and thresh_max <= 255):
+        raise IndexError('thresh_max must be thresh_min <= thresh_max <= 255')
+
+    if not (thresh_step >= 1 and thresh_step <= thresh_max):
+        raise IndexError('thresh_step must be 1 <= thresh_step <= thresh_max')
+
     im_thresh = [cv.threshold(image, i, 255, cv.THRESH_BINARY)[1]
                  for i in range(thresh_min, thresh_max, thresh_step)]
 
@@ -180,10 +207,11 @@ def get_contours(image, thresh_min, thresh_max=255, thresh_step=10):
 
     contours = [contour for contours in contours_nested
                 for contour in contours]
+
     return contours
 
 
-def segment_contours(binary_image):
+def segment_contours(binary_image, min_distance=10):
     """
     Segments binary image and returns list of contours
 
@@ -192,17 +220,30 @@ def segment_contours(binary_image):
     binary_image : numpy ndarray
         Image to find contours in
 
+    min_distance : int
+        Minimum distance between peaks of segmented image
+
     Returns
     -------
     contours : list of numpy ndarrays
         A list of contours
     """
+    if not isinstance(binary_image, np.ndarray):
+        raise TypeError('binary_image must be a numpy array')
+
+    if not isinstance(min_distance, int):
+        raise TypeError('min_distance must be an int')
+
+    if not (min_distance >= 0):
+        raise IndexError('min_distance must be >= 0')
+
     # apply distance transform
     distance = ndi.distance_transform_edt(binary_image)
 
     # find maximum coordinates and label on mask
     coords = peak_local_max(distance,
-                            min_distance=10,
+                            threshold_rel=0.5,
+                            min_distance=min_distance,
                             footprint=np.ones((3, 3)),
                             labels=binary_image)
     mask = np.zeros(distance.shape, dtype=bool)
@@ -223,6 +264,100 @@ def segment_contours(binary_image):
         contours.append(contour[0])
 
     return contours
+
+
+def organize_contours(contours, coords, image, min_distance):
+    """
+    Organizes contours into list based on image coordinates
+
+    Parameters
+    ----------
+    contours : nested list or numpy ndarray
+        each inner list contains contour points
+        contours to organize
+
+    coords : nested list or numpy ndarray
+        each inner list is an image coordinate
+        coordinates to organize contours by
+
+    image : numpy ndarray
+        image to create Blob instance with
+
+    min_distance : int
+        Minimum distance between peaks of segmented contours
+
+    Returns
+    -------
+    contour_list : nested list
+        each inner list contains Blob instances
+        Blob instances are organized by coordinates
+    """
+    if not isinstance(contours, (list, tuple, np.ndarray)):
+        raise TypeError('contours must be a list, tuple, or numpy array')
+
+    if not isinstance(coords, (list, tuple, np.ndarray)):
+        raise TypeError('coords must be a list, tuple, or numpy array')
+
+    if not isinstance(image, np.ndarray):
+        raise TypeError('image must be a numpy array')
+
+    if not isinstance(min_distance, int):
+        raise TypeError('min_distance must be an int')
+
+    if not (min_distance >= 0):
+        raise IndexError('min_distance must be >= 0')
+
+    # initalize empty list that will hold contours
+    contour_list = [[] for pt in coords]
+
+    # initalize list that contains index of points in contour_list
+    # unique_points will contain single point idxs (ex. [2]) and
+    # multiple point idxs (ex. [2, 5]) in case a contour always
+    # contains multiple maxima
+    unique_points = [[i] for i in range(len(coords))]
+
+    # for each original contour found
+    for contour in contours:
+        maxima, idxs = maxima_filter(contour, coords)
+        if idxs is not None:
+
+            # if contour contains one maxima, append to idx in list
+            if len(idxs) == 1:
+                contour_list[idxs[0]].append(bc.Blob(contour, image))
+
+            # if contour contains more than one maxima, segment contour
+            else:
+                seg_binary = np.zeros(image.shape, dtype="uint8")
+                cv.fillPoly(seg_binary, pts=[contour], color=(255, 255, 255))
+                seg_contours = segment_contours(seg_binary, min_distance)
+                # for each segmented contour
+                for sc in seg_contours:
+                    sc_maxima, sc_idxs = maxima_filter(sc, coords)
+                    if sc_idxs is not None:
+
+                        # if segmented contour contains one maxima,
+                        # append to idx in list
+                        if len(sc_idxs) == 1:
+                            contour_list[sc_idxs[0]].append(bc.Blob(sc, image))
+
+                        # if segmented contour contains more than one maxima
+                        else:
+                            # new point (multiple idxs) and blob
+                            sc_idxs = list(sc_idxs)
+                            sc_blob = bc.Blob(sc, image)
+
+                            # if new point not already in unqiue_points,
+                            # add to unique_points and
+                            # add empty list to contour_list
+                            if sc_idxs not in unique_points:
+                                unique_points.append(sc_idxs)
+                                contour_list.append([])
+
+                            # get index and add new blob to contour_list
+                            sc_idx = unique_points.index(sc_idxs)
+                            contour_list[sc_idx].append(sc_blob)
+
+    return contour_list
 
 
 def maxima_filter(contour, local_maxima):
@@ -311,11 +446,11 @@ def blob_filter(blob, filters):
 
     for filt in filters:
 
-        if filt[1]:
+        if filt[1] is not None:
             if not (eval('blob.' + filt[0]) >= filt[1]):
                 return False
 
-        if filt[2]:
+        if filt[2] is not None:
             if not (eval('blob.' + filt[0]) <= filt[2]):
                 return False
 
@@ -585,98 +720,57 @@ def blob_best(blob_list, criteria):
     return blob_list[max_idx]
 
 
-def main():
+def final_blobs_filter(blobs):
     """
-    Strategy for finding blobs
-    --------------------------
-    1. Find maxima in image
-    2. Find contours that only contain a single maxima
-    3. Keep contours that conform to specific parameters
-    4. Keep the most similar blobs/contours for each maxima
-    5. Remove outlier blobs/contours
-    6. Keep blob with highest score
+    Finds blobs that may overlap and removes larger,
+    unncessary blobs from list
+
+    Parameters
+    ----------
+    blobs : list of Blob objects (class Blob)
+        Unneccessary blobs will be removed
+
+    Returns
+    -------
+    final_blobs : list
+        Copy of blobs without unnessessary blobs
     """
-    im = cv.imread('ex6.tif')
-    im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
-    im_blur = cv.GaussianBlur(im_gray,(15,15),0)
+    if not isinstance(blobs, list):
+        raise TypeError('blob_list must be a list')
 
-    '''example mask for finding nuclues -> now to find blobs'''
-    ret, im_binary = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
-    contours, hierarchy = cv.findContours(im_binary,
-                                          cv.RETR_EXTERNAL,
-                                          cv.CHAIN_APPROX_NONE)
-    contour = max(contours, key=cv.contourArea)
-    blob_blur = bc.Blob(contour, im_blur)
+    if not all((isinstance(blob, bc.Blob) for blob in blobs)):
+        raise TypeError('blob_list must only contain blobs')
 
-    local_max_coords = get_maxima(blob_blur, distance=4, threshold=0.85)
+    # get blob centers
+    blob_centers = [[int(blob.centroid_xy[0]), int(blob.centroid_xy[1])]
+                    for blob in blobs]
+    # remove duplicates
+    blob_centers = [list(y) for y in set([tuple(x) for x in blob_centers])]
 
-    im_maxima = im.copy()
-    for coordinate in local_max_coords:
-        cv.circle(im_maxima, (coordinate), 2, (255, 0, 0), 2)
+    # initialize list to group blobs based on blob centroids
+    blob_groups = [[] for pt in blob_centers]
+    for blob in blobs:
+        maxima, idxs = maxima_filter(blob.contour, blob_centers)
+        # for each center blob contains, add to blob_groups idx
+        if idxs is not None:
+            for idx in idxs:
+                blob_groups[idx].append(blob)
 
-    min_thresh = int(blob_blur.pixel_intensity_median)
-    contours = get_contours(im_blur, min_thresh)
+    # filter blobs to get non-overlapping blobs
+    final_blobs = blobs.copy()
+    for blobs in blob_groups:
+        # if blob_groups idx contain more than one blob
+        # indicates one point contains multiple blobs
+        if len(blobs) > 1:
+            # find blob with smallest area and keep that one
+            # blob larger than smallest contain multiple center points
+            # and are unneccearily large
+            area = [blob.area for blob in blobs]
+            min_area = min(area)
+            for i in range(len(area)):
+                if area[i] != min_area:
+                    # remove needed blobs from final_blobs
+                    if blobs[i] in final_blobs:
+                        final_blobs.remove(blobs[i])
 
-    contour_list = [[] for i in range(len(local_max_coords))]
-    if len(contours) > 0:
-        for contour in contours:
-            keys, key_idxs = maxima_filter(contour, local_max_coords)
-            if keys is not None:
-                if len(keys) == 1:
-                    contour_list[key_idxs[0]].append(bc.Blob(contour, im))
-
-                else: # if len(keys) > 1
-                    seg_binary = np.zeros(im_gray.shape, dtype="uint8")
-                    cv.fillPoly(seg_binary, pts=[contour], color=(255,255,255))
-                    seg_contours = segment_contours(seg_binary)
-                    for sc in seg_contours:
-                        keys, key_idxs = maxima_filter(sc, local_max_coords)
-                        if keys is not None:
-                            if len(keys) == 1:
-                                contour_list[key_idxs[0]].append(bc.Blob(sc, im))
-
-    filters = [['area_filled', 25, None],  # at least 0.05% of nucleus area
-               ['ellipse_fit_residual_mean', None, 2]]
-
-    blob_list = []
-    for contours in contour_list:
-        blob_list.append([x for x in contours if blob_filter(x, filters)])
-
-    params = [['aspect_ratio', 0.2],
-              ['solidity', 0.1],
-              ['roughness_perimeter', 0.1],
-              ['circularity', 0.2]]
-
-    sim_blobs = [similar_filter(blobs, params, 2) for blobs in blob_list]
-    sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
-
-    '''
-    out_filter = [['area_filled', 0.5, 1.5],
-                  ['curvature_mean()', 0.1, 1.25],
-                  ['circularity', 0.1, 1.25],
-                  ['perimeter_crofton', 0.2, 1]]
-    '''
-    out_filter = [['curvature_mean()', 0.1, 1],
-                  ['perimeter_crofton', 0.2, 1]]
-    no_outs = [outlier_filter(blobs, out_filter) for blobs in sim_blobs]
-    '''
-    criteria = [['area_filled', 'max', 1],
-                ['pixel_skew', 0, 1]]
-    '''
-    criteria = [['area_filled', 'max', 1],
-                ['roughness_surface', 'min', 1]]
-
-    blobs_best = [blob_best(blobs, criteria) for blobs in no_outs]
-
-    cv.imshow('1. original', im)
-    cv.imshow('2. peak local maxima', im_maxima)
-    cv.imshow('3. maxima contours', blob_im(im, contour_list))
-    cv.imshow('4. filtered contours', blob_im(im, blob_list))
-    cv.imshow('5. similar blobs', blob_im(im, sim_blobs))
-    cv.imshow('6 no outliers', blob_im(im, no_outs))
-    cv.imshow('7 final contours', blob_im(im, blobs_best))
-    cv.waitKey()
-
-
-if __name__ == '__main__':
-    main()
+    return final_blobs
