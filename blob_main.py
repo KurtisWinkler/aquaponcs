@@ -128,7 +128,7 @@ else:
 
 # get blob with highest score for each unique_point
 blobs_best = [bd.blob_best(blobs, best_filter) for blobs in no_outs]
-print(blobs_best)
+
 # save image with best blobs for each unique_point
 cv.imwrite('9_best_blobs.jpg', bd.blob_im(im_scaled, blobs_best))
 
