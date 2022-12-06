@@ -7,16 +7,15 @@ from PIL import Image
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(src_path)
 import nucleus_contour as nc  # nopep8
-import blob_class as bc # nopep8
+import blob_class as bc  # nopep8
 
-### UNIT TESTS ###
 
 class classTestNucContour(unittest.TestCase):
     # setUp and tearDown
     @classmethod
     def setUpClass(cls):
 
-        im_array = np.zeros((512,512,3), dtype='uint8')
+        im_array = np.zeros((512, 512, 3), dtype='uint8')
         cls.im_zeros = im_array.copy()
 
         # create test circle
@@ -29,13 +28,16 @@ class classTestNucContour(unittest.TestCase):
         cv.circle(im_array, center_coordinates, radius, color, thickness)
 
         # create test image
-        src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+        src_path = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), '../'))
         sys.path.append(src_path)
         im = Image.fromarray(im_array)
         im.save('test_image.jpeg')
 
         # Find the contour
-        output_name, contour, img = nc.nucleus_contour('test_image.jpeg', 'test_cont.jpg', 'test_nuc_cont_circle.jpg')
+        output_name, contour, img = nc.nucleus_contour('test_image.jpeg',
+                                                       'test_cont.jpg',
+                                                       'test_circle.jpg')
 
         cls.contour = contour
 
@@ -47,7 +49,7 @@ class classTestNucContour(unittest.TestCase):
         cls.radius = None
         os.remove('test_image.jpeg')
         os.remove('test_cont.jpg')
-        os.remove('test_nuc_cont_circle.jpg')
+        os.remove('test_circle.jpg')
 
     def test_nucleus_contour_perimeter(self):
         # use normal formulas to calculate perimeter of circle
@@ -60,8 +62,8 @@ class classTestNucContour(unittest.TestCase):
         threshold = .1
 
         self.assertTrue(calc_perim * (1 - threshold)
-                         <= contour_perim <=
-                         calc_perim * (1 + threshold))
+                        <= contour_perim <=
+                        calc_perim * (1 + threshold))
 
     def test_nucleus_contour_area(self):
         # normal formula for area of circle
@@ -72,8 +74,6 @@ class classTestNucContour(unittest.TestCase):
 
         threshold = .1
 
-        self.assertTrue((1 - threshold) * calc_area 
+        self.assertTrue((1 - threshold) * calc_area
                         <= contour_area <=
                         calc_area * (1 + threshold))
-        
-        
