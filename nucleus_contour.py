@@ -1,12 +1,9 @@
 '''
 This code uses the active_contours function from scikit-image to create a snake that fits to the nucleus of the cell
 '''
-from skimage.draw import circle_perimeter
-from skimage.filters import gaussian, sobel
-from skimage.filters.rank import entropy
 from skimage.color import rgb2gray
 from skimage import io
-from skimage.segmentation import (active_contour, inverse_gaussian_gradient, morphological_geodesic_active_contour, disk_level_set, checkerboard_level_set, morphological_chan_vese)
+from skimage.segmentation import (checkerboard_level_set, morphological_chan_vese)
 from skimage.morphology import disk
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,7 +46,6 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
 
     # Initial level set
     
-    #init_ls = disk_level_set(np.shape(img))
     init_ls = checkerboard_level_set(np.shape(img), 5)
     
     # List with intermediate results for plotting the evolution
@@ -57,17 +53,7 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
     evolution = []
     callback = store_evolution_in(evolution)
 
-    ## Chan_vese
-    
-    ## Entropy
-    
-    # I think I can get a more accurate perimeter if I mask using the entropy, but it's not currently necessary
-    # For the perimeter finding
-    
-    # ent_fig, ent_ax = plt.subplots(figsize=(7,7))
-    # entropy_image = entropy(img, disk(5))
-    # ent_ax.imshow(entropy_image, cmap = 'magma')
-    # plot = plt.savefig('entropy_image.png', bbox_inches='tight')
+    # Chan_vese
     
     snake = morphological_chan_vese(img, num_iter=70, init_level_set=init_ls,
                              smoothing=3, iter_callback=callback)
@@ -107,7 +93,6 @@ def nucleus_contour(input_name, output_name_contrast, output_name):
 
 if __name__ == '__main__':
     output_name, contour, img = nucleus_contour(input_name, output_name_contrast, output_name)
-    #print(contour)
     Nuc_blob = bc.Blob(contour, img)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
