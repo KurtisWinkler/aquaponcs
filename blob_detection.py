@@ -752,8 +752,9 @@ def final_blobs_filter(blobs):
     for blob in blobs:
         maxima, idxs = maxima_filter(blob.contour, blob_centers)
         # for each center blob contains, add to blob_groups idx
-        for idx in idxs:
-            blob_groups[idx].append(blob)
+        if idxs is not None:
+            for idx in idxs:
+                blob_groups[idx].append(blob)
 
     # filter blobs to get non-overlapping blobs
     final_blobs = blobs.copy()
