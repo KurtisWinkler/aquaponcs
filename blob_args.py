@@ -1,5 +1,6 @@
 import argparse
 
+
 def get_args():
     """processes input arguments
     Parameters
@@ -34,7 +35,7 @@ def get_args():
     # add argument for min_thresh_contours
     parser.add_argument('--min_thresh_contours',
                         type=float,
-                        help='minimum relative intensity threshold for contours',
+                        help='minimum relative threshold for contours',
                         default=0.8)
 
     # add argument for thresh_step
@@ -42,31 +43,31 @@ def get_args():
                         type=int,
                         help='step size for finding contours',
                         default=5)
-    
+
     # add argument for init_filter
     parser.add_argument('--init_filter',
                         type=list,
                         help='initial filter to remove blobs',
                         default=None)
-    
+
     # add argument for sim_filter
     parser.add_argument('--sim_filter',
                         type=list,
                         help='filter to remove non-similar blobs',
                         default=None)
-    
+
     # add argument for out_filter
     parser.add_argument('--out_filter',
                         type=list,
                         help='filter to remove outlier blobs',
                         default=None)
-    
+
     # add argument for best_filter
     parser.add_argument('--best_filter',
                         type=list,
                         help='criteria to choose best blobs',
                         default=None)
-    
+
     # ADD OPTIONS TO NOT INCLUDE init/sim/out_filter
     parser.add_argument('--no_init_filter',
                         action='store_true')

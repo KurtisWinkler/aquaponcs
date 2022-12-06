@@ -16,7 +16,7 @@ if args.init_filter is None:
                    ['pixel_kurtosis', None, 0]]
 else:
     init_filter = args.init_filter
-    
+
 # create filter to get blobs most simliar to each other
 if args.sim_filter is None:
     sim_filter = [['pixel_intensity_percentile(10)', 0.2]]
@@ -98,7 +98,8 @@ cv.imwrite('5_maxima_blobs.jpg', bd.blob_im(im_scaled, contour_list))
 if args.no_init_filter is False:
     blob_list = []
     for contours in contour_list:
-        blob_list.append([x for x in contours if bd.blob_filter(x, init_filter)])
+        blob_list.append([x for x in contours
+                          if bd.blob_filter(x, init_filter)])
 
     # save image with filtered contours
     cv.imwrite('6_filtered_blob.jpg', bd.blob_im(im_scaled, blob_list))
@@ -107,14 +108,15 @@ else:
 
 # filter blobs based on similarity
 if args.no_sim_filter is False:
-    sim_blobs = [bd.similar_filter(blobs, sim_filter, 2) for blobs in blob_list]
+    sim_blobs = [bd.similar_filter(blobs, sim_filter, 2)
+                 for blobs in blob_list]
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
     # save image with most similar blobs contours for each unique_point
     cv.imwrite('7_similar_blobs.jpg', bd.blob_im(im_scaled, sim_blobs))
 else:
     sim_blobs = blob_list
-    
+
 # filter out outliers
 if args.no_out_filter is False:
     no_outs = [bd.outlier_filter(blobs, out_filter) for blobs in sim_blobs]
