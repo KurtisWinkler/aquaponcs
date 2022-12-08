@@ -64,7 +64,7 @@ def add_value(blob_params, blob, dec=2):
         try:
             val = eval('blob.' + funcs[i])
             blob_params[funcs[i]].append(str(np.around(val, dec)))
-        except Execption as e:
+        except Exception as e:
             val = eval('blob.' + funcs[i] + '()')
             blob_params[funcs[i]].append(str(np.around(val, dec)))
 
