@@ -30,12 +30,11 @@ class classTestNucContour(unittest.TestCase):
 
         # random tests
 
-        random_radii = np.random.randint(25, 60, (1, 10))
+        random_radii = np.random.randint(25, 60, (10))
         rand_idx = np.random.randint(0, 9)
         cls.random_radius = random_radii[rand_idx]
-        cv.circle(im_array_2, center_coordinates,
-                  cls.random_radius, color,
-                  thickness)
+        cv.circle(im_array_2, center_coordinates, random_radii[rand_idx],
+                  color, thickness)
 
         # Find the set contour
         contour = nc.nucleus_contour(im_array_1)
@@ -56,6 +55,11 @@ class classTestNucContour(unittest.TestCase):
     def tearDownClass(cls):
         cls.im_zeros = None
         cls.radius = None
+        cls.random_radius = None
+        cls.circle_blob = None
+        cls.rand_circle_blob = None
+        cls.rand_contour = None
+        cls.contour = None
 
     def test_nucleus_contour_perimeter(self):
 
@@ -74,7 +78,7 @@ class classTestNucContour(unittest.TestCase):
 
         # random tests
         calc_perim_rand = 2 * np.pi * self.random_radius
-        contour_perim_rand = cls.rand_circle_blob.perimeter_crofton
+        contour_perim_rand = self.rand_circle_blob.perimeter_crofton
 
         self.assertTrue(calc_perim_rand * (1 - threshold)
                         <= contour_perim_rand <=
@@ -97,7 +101,7 @@ class classTestNucContour(unittest.TestCase):
 
         # random tests
         calc_area_rand = np.pi * self.random_radius**2
-        contour_area_rand = cls.rand_circle_blob.area_filled
+        contour_area_rand = self.rand_circle_blob.area_filled
 
         self.assertTrue(calc_area_rand * (1 - threshold)
                         <= contour_area_rand <=
