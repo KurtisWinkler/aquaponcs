@@ -1,4 +1,3 @@
-from IPython.display import display
 import blob_class as bc
 import pandas as pd
 import numpy as np
@@ -82,7 +81,8 @@ def get_params(blobs):
                       index=['blob' + str(i) for i in range(1, len(blobs)+1)])
     
     return df
-            
+
+
 def main():
     im = cv.imread("ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
@@ -91,7 +91,6 @@ def main():
     contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     blobs = [bc.Blob(contour, im) for contour in contours]
     df = get_params(blobs)
-    display(df)
     df.to_csv("output.csv")
 
 if __name__ == '__main__':
