@@ -50,6 +50,7 @@ funcs = [
         'solidity'
     ]
 
+
 def build_dict():
     blob_params = {}
     for property in funcs:
@@ -58,12 +59,12 @@ def build_dict():
     return blob_params
 
 
-def add_value(blob_params, blob, dec = 2):
+def add_value(blob_params, blob, dec=2):
     for i in range(len(funcs)):
         try:
             val = eval('blob.' + funcs[i])
             blob_params[funcs[i]].append(str(np.around(val, dec)))
-        except:
+        except Exception as e:
             val = eval('blob.' + funcs[i] + '()')
             blob_params[funcs[i]].append(str(np.around(val, dec)))
 
@@ -71,7 +72,7 @@ def add_value(blob_params, blob, dec = 2):
 def get_params(blobs):
     # Create dictionary
     blob_params = build_dict()
-    
+
     # Get properties for each blobs
     for blob in blobs:
         add_value(blob_params, blob)
@@ -79,19 +80,22 @@ def get_params(blobs):
     # Transfer dictionary to pandas dataframe
     df = pd.DataFrame(blob_params,
                       index=['blob' + str(i) for i in range(1, len(blobs)+1)])
-    
+
     return df
 
 
 def main():
-    im = cv.imread("ex3.tif")
+    im = cv.imread("example_images/ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
     ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
-    contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv.findContours(im_thresh,
+                                          cv.RETR_EXTERNAL,
+                                          cv.CHAIN_APPROX_NONE)
     blobs = [bc.Blob(contour, im) for contour in contours]
     df = get_params(blobs)
     df.to_csv("output.csv")
+
 
 if __name__ == '__main__':
     main()
