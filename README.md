@@ -36,7 +36,22 @@ If the user does not wish to include initial, similar, or outlier filters, the f
 --no_sim_filter
 --no_out_filter
 
-## Contrast Function
+### Blob Class and Parameters (blob_class.py and blob_params.py)
+blob_class.py creates a class object, blob, to get attributes of all blobs. It inherits from the RegionProperties class in scikit-image. A list of properties can be found in sci-kit documentation: 
+"https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops"
+
+Attributes include:
+contour (nested list): contour list of blobs in scikit format
+cv_contour (nested list): like contour but in openCV format (uses double brackets)
+orig_image (image matrix): original image that the contour was generated from
+label_im (matrix): image labeled by region and contours
+
+Methods associated with the class can be read in blob_class.py
+
+blob_params.py contains a set of functions to describe blobs that relies on the attributes of blob_class. These functions include get_center, get_circularity, get_solidity, get_aspectRatio, and get_roundness.
+
+
+### Contrast Function
 The contrast function rescales input images by a percentage of pixel intensity defined by the user. It takes arguments for:
 file (str): the name of the input image
 max_rescale (int): the pixel intensity value to rescale the current maximum up to
@@ -44,5 +59,7 @@ min_rescale (int): the pixel intensity value to rescale the current maximum down
 output_name (str): name of the proessed output image to be used in workflow downstream 
 
 The output of the function is a numpy array of pixel intensities and an output file image. 
+
+
 
 ## example code 
