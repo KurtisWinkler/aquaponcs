@@ -13,7 +13,8 @@ args = ba.get_args()
 
 # create initial filters for blobs
 if args.init_filter is None:
-    init_filter = [['area', 20, None],
+    init_filter = [['area', 25, None],
+                   ['circularity', 0.9, None],
                    ['ellipse_fit_residual_mean', None, 1],
                    ['pixel_kurtosis', None, 0]]
 else:
@@ -140,6 +141,9 @@ final_blobs = bd.final_blobs_filter(blobs_best)
 
 # save image with final blob contours
 cv.imwrite('10_final_blobs.jpg', bd.blob_im(im_scaled, final_blobs))
+
+# convert blobs to original image instead of blurred
+final_blobs = [bc.Blob(blob.cv_contour, im_scaled) for blob in final_blobs]
 
 # get parameters of final blobs
 params = po.get_params(final_blobs)
