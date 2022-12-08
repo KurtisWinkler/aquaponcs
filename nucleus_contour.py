@@ -34,8 +34,12 @@ def nucleus_contour(image, num_iter=70, smoothing=3):
     contour: the contour given by the snake
 
     '''
-    img = rgb2gray(image)
-
+    img = np.array(image, dtype=np.uint8)
+    
+    # convert image to grayscale if needed
+    if len(image.shape) > 3:
+        img = rgb2gray(img)
+    
     # Initial level set
 
     init_ls = checkerboard_level_set(np.shape(img), 5)
