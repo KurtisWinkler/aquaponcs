@@ -9,10 +9,6 @@ import contrast_functions as cfs
 import blob_class as bc
 import cv2 as cv
 
-input_name = 'test_image.jpeg'
-output_name_contrast = 'contrasted_image.jpeg'
-output_name = 'unit_test.jpeg'
-
 
 def store_evolution_in(L):
     """Returns a callback function to store the evolution of the level sets in
@@ -30,13 +26,12 @@ def nucleus_contour(image, num_iter=70, smoothing=3):
     Inputs:
     -------
     image: a matrix of the desired image
-    input_name: a str name of an input image file
-    output_name_contrast: a str name of the contrasted output image
-    output_name: a str name of the final output image with contour
+    num_iter: number of iterations for snake
+    smoothing: amount of smoothing for snake
 
     Returns:
     --------
-    output_name: a str name of the final image with the contour drawn
+    contour: the contour given by the snake
 
     '''
     img = rgb2gray(image)
@@ -58,33 +53,13 @@ def nucleus_contour(image, num_iter=70, smoothing=3):
                                     smoothing=smoothing,
                                     iter_callback=callback)
 
-    fig, ax = plt.subplots(figsize=(7, 7))
+    snake = snake.astype(np.uint8)
 
-    ax.imshow(img, cmap="gray")
-    ax.set_axis_off()
-    ax.contour(snake, [.5], colors='r')
+    contours, _ = cv.findContours(snake,
+                                  cv.RETR_EXTERNAL,
+                                  cv.CHAIN_APPROX_NONE)
 
-    contours = ax.contour(snake, [.5])
-
-    # Finding the longest path to avoid small contours on image noise
-
-    paths = []
-    for path in contours.collections[0].get_paths():
-        paths.append(path)
-
-    lengths = []
-    for path in paths:
-        lengths.append(len(path))
-
-    max_length = max(lengths)
-
-    path_idx = lengths.index(max_length)
-
-    cell_path = paths[path_idx]
-    vertices = cell_path.vertices
-    xs = vertices[:, 0]
-    ys = vertices[:, 1]
-    contour = [[int(xs[i]), int(ys[i])] for i in range(len(xs)-1)]
+    contour = max(contours, key=cv.contourArea)
 
     return contour
 
@@ -95,10 +70,7 @@ if __name__ == '__main__':
     Nuc_blob = bc.Blob(contour, image)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
-
-    contour = np.array(contour)
-    print(contour.shape)
     
-    cv.drawContours(image, Nuc_blob.cv_contour, -1, (255,0,0), 2, cv.LINE_8)
+    cv.drawContours(image, contour, -1, (255,0,0), 2, cv.LINE_8)
     cv.imshow('img', image)
     cv.waitKey()
