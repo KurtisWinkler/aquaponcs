@@ -21,7 +21,7 @@ def store_evolution_in(L):
     return store
 
 
-def nucleus_contour(image, num_iter=70, smoothing=3):
+def nucleus_contour(image, num_iter=10, smoothing=3):
     '''
     Inputs:
     -------
@@ -37,12 +37,12 @@ def nucleus_contour(image, num_iter=70, smoothing=3):
     img = np.array(image, dtype=np.uint8)
     
     # convert image to grayscale if needed
-    if len(image.shape) > 3:
-        img = rgb2gray(img)
+    if len(image.shape) == 3:
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     
     # Initial level set
-
-    init_ls = checkerboard_level_set(np.shape(img), 5)
+    #init_ls = checkerboard_level_set(np.shape(img), 5)
+    _, init_ls = cv.threshold(img, 0.5, 1, cv.THRESH_BINARY)
 
     # List with intermediate results for plotting the evolution
 
@@ -69,8 +69,12 @@ def nucleus_contour(image, num_iter=70, smoothing=3):
 
 
 if __name__ == '__main__':
-    image = cv.imread('ex3.tif')
-    contour = nucleus_contour(image)
+    image = cv.imread('ex6.tif')
+    image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    image = cfs.percentile_rescale(image, 0.35, 99.65)
+    contour = nucleus_contour(image,
+                             num_iter=10,
+                             smoothing=5)
     Nuc_blob = bc.Blob(contour, image)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
