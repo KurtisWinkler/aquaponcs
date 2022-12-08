@@ -389,47 +389,17 @@ class Blob(RegionProperties):
                 print(funcs[i] + ': ' + str(np.around(val, dec)))
 
 
-def plot_image(blob):
-    x0, y0 = blob.centroid_xy
-    y0 = int(y0)
-    x0 = int(x0)
-    orientation = blob.orientation
-    x1 = int(x0 + math.cos(orientation) * 0.5 * blob.axis_minor_length)
-    y1 = int(y0 - math.sin(orientation) * 0.5 * blob.axis_minor_length)
-    x2 = int(x0 - math.sin(orientation) * 0.5 * blob.axis_major_length)
-    y2 = int(y0 - math.cos(orientation) * 0.5 * blob.axis_major_length)
-    
-    im = blob.orig_image
-    im_copy = im.copy()
-    
-    #cv.line(im_copy, (x0, y0), (x1, y1), (0,255,255), 2)
-    cv.line(im_copy, (x0, y0), (x0-(x1-x0), y0-(y1-y0)), (0,255,255), 2)
-    #cv.line(im_copy, (x0, y0), (x2, y2), (0,0,255), 2)
-    cv.line(im_copy, (x0, y0), (x0-(x2-x0), y0-(y2-y0)), (0,0,255), 2)
-    cv.circle(im_copy, (x0, y0), 2, (0,255,0), 2)
-    cv.drawContours(im_copy, blob.cv_contour, -1, (255,0,0), 2, cv.LINE_8)
-    cv.imshow('orig', im)
-    cv.imshow('params', im_copy)
-    cv.imwrite('pres1.jpg', im_copy)
-    cv.imshow('masked', blob.image_masked)
-    cv.waitKey()
-    
 def main():
     im = cv.imread("ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
     ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
-    contours, hierarchy = cv.findContours(im_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv.findContours(im_thresh,
+                                          cv.RETR_EXTERNAL,
+                                          cv.CHAIN_APPROX_NONE)
     contour = max(contours, key=cv.contourArea)
     blob = Blob(contour, im)
-    print(blob.area_convex)
     blob.print_properties()
-    #plot_image(blob)
-    '''
-    cv.imshow('masked', blob.image_masked)
-    plt.hist(blob.pixel_intensities,256,[0,256]); plt.show()
-    cv.waitKey()
-    '''
 
 
 if __name__ == '__main__':
