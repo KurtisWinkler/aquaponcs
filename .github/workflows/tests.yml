@@ -19,7 +19,22 @@ jobs:
           activate-environment: aqua
           environment-file: environment.yml
       - run: pycodestyle $(git ls-files "*.py")
-
+      
+  functional_tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with: 
+          activate-environment: aqua
+          environment-file: environment.yml
+      - run: |
+              cd test
+              bash test_func_blob_main.sh
+      
   unit_tests:
     runs-on: ubuntu-latest
     defaults:
@@ -31,6 +46,11 @@ jobs:
         with: 
           activate-environment: aqua
           environment-file: environment.yml
-      - run: python -m unittest test/test_contour
-      - run: python -m unittest test/test_seg
-
+      - run: |
+              cd test
+              python -m unittest test_contour
+              python -m unittest test_seg
+              python -m unittest test_nuc_cont
+              python -m unittest test_blob_class
+              python -m unittest test_blob_dectection
+              python -m unittest test_contrast

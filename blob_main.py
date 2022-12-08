@@ -1,9 +1,11 @@
 import cv2 as cv
+import numpy as np
 import pandas as pd
 import blob_args as ba
 import blob_class as bc
 import blob_detection as bd
 import contrast_functions as cf
+import nucleus_contour as nc
 import param_output as po
 
 # get input arguments
@@ -11,7 +13,8 @@ args = ba.get_args()
 
 # create initial filters for blobs
 if args.init_filter is None:
-    init_filter = [['area', 20, None],
+    init_filter = [['area', 25, None],
+                   ['circularity', 0.9, None],
                    ['ellipse_fit_residual_mean', None, 1],
                    ['pixel_kurtosis', None, 0]]
 else:
@@ -53,15 +56,16 @@ cv.imwrite('2_scaled_gray_image.jpg', im_gray)
 im_blur = cv.GaussianBlur(im_gray, (15, 15), 0)
 cv.imwrite('3_blurred_image.jpg', im_blur)
 
-# REPLACE WITH HENRY CODE
-ret, im_binary = cv.threshold(im_blur, 25, 255, cv.THRESH_BINARY)
-contours, _ = cv.findContours(im_binary,
-                              cv.RETR_EXTERNAL,
-                              cv.CHAIN_APPROX_NONE)
-contour = max(contours, key=cv.contourArea)
+# Get contour of nucleus
+nuc_contour = nc.nucleus_contour(im_gray,
+                                 num_iter=10,
+                                 smoothing=5)
 
 # convert nucleus into Blob object
-nuc_blur = bc.Blob(contour, im_blur)
+nuc_blur = bc.Blob(nuc_contour, im_blur)
+
+# save image with all blob contours
+cv.imwrite('3.5_nucleus_contour.jpg', bd.blob_im(im_scaled, [nuc_blur]))
 
 # find maxima in nucleus
 local_max_coords = bd.get_maxima(image=nuc_blur,
@@ -137,6 +141,9 @@ final_blobs = bd.final_blobs_filter(blobs_best)
 
 # save image with final blob contours
 cv.imwrite('10_final_blobs.jpg', bd.blob_im(im_scaled, final_blobs))
+
+# convert blobs to original image instead of blurred
+final_blobs = [bc.Blob(blob.cv_contour, im_scaled) for blob in final_blobs]
 
 # get parameters of final blobs
 params = po.get_params(final_blobs)

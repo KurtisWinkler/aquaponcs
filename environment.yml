@@ -1,0 +1,16 @@
+name: aqua
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - pycodestyle
+  - python=3.10.6
+  - pip:
+    - matplotlib
+    - pandas
+    - numpy
+    - opencv-python
+    - pillow==9.2.0
+    - scikit-image==0.19.3
+    - scipy==1.9.2
+prefix: /home/jovyan/.conda/envs/aqua
