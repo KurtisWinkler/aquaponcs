@@ -14,7 +14,7 @@ class classTestContrast(unittest.TestCase):
 
     def test_percentile_rescale(self):
         # test to make sure the file exists
-        if cf.percentile_rescale('bad_file_path.csv'):
+        if cf.percentile_rescale('bad_file_path.csv', .05, .99):
             self.assertRaise(FileNotFoundError)
 
         # want a positive test for min and max percentiles
