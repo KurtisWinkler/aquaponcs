@@ -118,7 +118,7 @@ class Blob(RegionProperties):
         if len(contour.shape) == 3 and contour.shape[1] == 1:
             self.cv_contour = contour.copy()
             contour = contour[:, 0]
-        elif contour.shape == 2:
+        elif len(contour.shape) == 2:
             self.cv_contour = np.array([[pt] for pt in contour])
 
         self.contour = contour
