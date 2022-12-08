@@ -2,8 +2,12 @@ import unittest
 import numpy as np
 import cv2 as cv
 from scipy import ndimage as ndi
-import blob_class as bc
-import blob_detection as bd
+import sys
+import os
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+sys.path.append(src_path)
+import blob_class as bc # nopep8
+import blob_detection as bd # nopep8
 
 
 class TestBlobDetection(unittest.TestCase):
