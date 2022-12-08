@@ -5,7 +5,7 @@ from skimage.segmentation import (checkerboard_level_set,
 from skimage.morphology import disk
 import numpy as np
 import matplotlib.pyplot as plt
-import contrast_function_scikit as cfs
+import contrast_functions as cfs
 import blob_class as bc
 import cv2 as cv
 
@@ -25,8 +25,7 @@ def store_evolution_in(L):
     return store
 
 
-def nucleus_contour(input_name, output_name_contrast,
-                    output_name, num_iter=70, smoothing=3):
+def nucleus_contour(image, num_iter=70, smoothing=3):
     '''
     Inputs:
     -------
@@ -40,11 +39,7 @@ def nucleus_contour(input_name, output_name_contrast,
     output_name: a str name of the final image with the contour drawn
 
     '''
-
-    contrast_image = cfs.percentile_rescale(input_name, 0.5,
-                                            99.5, output_name_contrast)
-    image_cont = io.imread(output_name_contrast)
-    img = rgb2gray(image_cont)
+    img = rgb2gray(image)
 
     # Initial level set
 
@@ -57,16 +52,17 @@ def nucleus_contour(input_name, output_name_contrast,
 
     # Chan_vese
 
-    snake = morphological_chan_vese(img, num_iter, init_level_set=init_ls,
-                                    smoothing, iter_callback=callback)
+    snake = morphological_chan_vese(image=img,
+                                    num_iter=num_iter,
+                                    init_level_set=init_ls,
+                                    smoothing=smoothing,
+                                    iter_callback=callback)
 
     fig, ax = plt.subplots(figsize=(7, 7))
 
     ax.imshow(img, cmap="gray")
     ax.set_axis_off()
     ax.contour(snake, [.5], colors='r')
-
-    plot = plt.savefig(output_name, bbox_inches='tight')
 
     contours = ax.contour(snake, [.5])
 
@@ -88,15 +84,21 @@ def nucleus_contour(input_name, output_name_contrast,
     vertices = cell_path.vertices
     xs = vertices[:, 0]
     ys = vertices[:, 1]
-    contour = [(int(xs[i]), int(ys[i])) for i in range(len(xs)-1)]
+    contour = [[int(xs[i]), int(ys[i])] for i in range(len(xs)-1)]
 
-    return output_name, contour, img
+    return contour
 
 
 if __name__ == '__main__':
-    output_name, contour, img = nucleus_contour(input_name,
-                                                output_name_contrast,
-                                                output_name)
-    Nuc_blob = bc.Blob(contour, img)
+    image = cv.imread('ex3.tif')
+    contour = nucleus_contour(image)
+    Nuc_blob = bc.Blob(contour, image)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
+
+    contour = np.array(contour)
+    print(contour.shape)
+    
+    cv.drawContours(image, Nuc_blob.cv_contour, -1, (255,0,0), 2, cv.LINE_8)
+    cv.imshow('img', image)
+    cv.waitKey()
