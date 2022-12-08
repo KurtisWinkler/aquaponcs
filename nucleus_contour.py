@@ -5,13 +5,9 @@ from skimage.segmentation import (checkerboard_level_set,
 from skimage.morphology import disk
 import numpy as np
 import matplotlib.pyplot as plt
-import contrast_function_scikit as cfs
+import contrast_functions as cfs
 import blob_class as bc
 import cv2 as cv
-
-input_name = 'test_image.jpeg'
-output_name_contrast = 'contrasted_image.jpeg'
-output_name = 'unit_test.jpeg'
 
 
 def store_evolution_in(L):
@@ -25,30 +21,28 @@ def store_evolution_in(L):
     return store
 
 
-def nucleus_contour(input_name, output_name_contrast,
-                    output_name, num_iter=70, smoothing=3):
+def nucleus_contour(image, num_iter=10, smoothing=3):
     '''
     Inputs:
     -------
     image: a matrix of the desired image
-    input_name: a str name of an input image file
-    output_name_contrast: a str name of the contrasted output image
-    output_name: a str name of the final output image with contour
+    num_iter: number of iterations for snake
+    smoothing: amount of smoothing for snake
 
     Returns:
     --------
-    output_name: a str name of the final image with the contour drawn
+    contour: the contour given by the snake
 
     '''
-
-    contrast_image = cfs.percentile_rescale(input_name, 0.5,
-                                            99.5, output_name_contrast)
-    image_cont = io.imread(output_name_contrast)
-    img = rgb2gray(image_cont)
-
+    img = np.array(image, dtype=np.uint8)
+    
+    # convert image to grayscale if needed
+    if len(image.shape) == 3:
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    
     # Initial level set
-
-    init_ls = checkerboard_level_set(np.shape(img), 5)
+    #init_ls = checkerboard_level_set(np.shape(img), 5)
+    _, init_ls = cv.threshold(img, 0.5, 1, cv.THRESH_BINARY)
 
     # List with intermediate results for plotting the evolution
 
@@ -57,46 +51,34 @@ def nucleus_contour(input_name, output_name_contrast,
 
     # Chan_vese
 
-    snake = morphological_chan_vese(img, num_iter, init_level_set=init_ls,
-                                    smoothing, iter_callback=callback)
+    snake = morphological_chan_vese(image=img,
+                                    num_iter=num_iter,
+                                    init_level_set=init_ls,
+                                    smoothing=smoothing,
+                                    iter_callback=callback)
 
-    fig, ax = plt.subplots(figsize=(7, 7))
+    snake = snake.astype(np.uint8)
 
-    ax.imshow(img, cmap="gray")
-    ax.set_axis_off()
-    ax.contour(snake, [.5], colors='r')
+    contours, _ = cv.findContours(snake,
+                                  cv.RETR_EXTERNAL,
+                                  cv.CHAIN_APPROX_NONE)
 
-    plot = plt.savefig(output_name, bbox_inches='tight')
+    contour = max(contours, key=cv.contourArea)
 
-    contours = ax.contour(snake, [.5])
-
-    # Finding the longest path to avoid small contours on image noise
-
-    paths = []
-    for path in contours.collections[0].get_paths():
-        paths.append(path)
-
-    lengths = []
-    for path in paths:
-        lengths.append(len(path))
-
-    max_length = max(lengths)
-
-    path_idx = lengths.index(max_length)
-
-    cell_path = paths[path_idx]
-    vertices = cell_path.vertices
-    xs = vertices[:, 0]
-    ys = vertices[:, 1]
-    contour = [(int(xs[i]), int(ys[i])) for i in range(len(xs)-1)]
-
-    return output_name, contour, img
+    return contour
 
 
 if __name__ == '__main__':
-    output_name, contour, img = nucleus_contour(input_name,
-                                                output_name_contrast,
-                                                output_name)
-    Nuc_blob = bc.Blob(contour, img)
+    image = cv.imread('ex6.tif')
+    image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    image = cfs.percentile_rescale(image, 0.35, 99.65)
+    contour = nucleus_contour(image,
+                             num_iter=10,
+                             smoothing=5)
+    Nuc_blob = bc.Blob(contour, image)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
+    
+    cv.drawContours(image, contour, -1, (255,0,0), 2, cv.LINE_8)
+    cv.imshow('img', image)
+    cv.waitKey()
