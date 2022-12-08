@@ -28,20 +28,19 @@ def nucleus_contour(image, num_iter=10, smoothing=3):
     image: a matrix of the desired image
     num_iter: number of iterations for snake
     smoothing: amount of smoothing for snake
-
     Returns:
     --------
     contour: the contour given by the snake
-
     '''
+
     img = np.array(image, dtype=np.uint8)
-    
+
     # convert image to grayscale if needed
     if len(image.shape) == 3:
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    
+
     # Initial level set
-    #init_ls = checkerboard_level_set(np.shape(img), 5)
+    # init_ls = checkerboard_level_set(np.shape(img), 5)
     _, init_ls = cv.threshold(img, 0.5, 1, cv.THRESH_BINARY)
 
     # List with intermediate results for plotting the evolution
@@ -73,12 +72,12 @@ if __name__ == '__main__':
     image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     image = cfs.percentile_rescale(image, 0.35, 99.65)
     contour = nucleus_contour(image,
-                             num_iter=10,
-                             smoothing=5)
+                              num_iter=10,
+                              smoothing=5)
     Nuc_blob = bc.Blob(contour, image)
     print(Nuc_blob.area_filled)
     print(Nuc_blob.perimeter_crofton)
-    
-    cv.drawContours(image, contour, -1, (255,0,0), 2, cv.LINE_8)
+
+    cv.drawContours(image, contour, -1, (255, 0, 0), 2, cv.LINE_8)
     cv.imshow('img', image)
     cv.waitKey()
