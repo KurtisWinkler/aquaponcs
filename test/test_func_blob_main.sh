@@ -23,19 +23,19 @@ run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif
 assert_no_stdout
 assert_exit_code 0
 
-run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --init_filter [['area', 20, None]]
+run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --init_filter '[['area', 20, None]]'
 assert_no_stdout
 assert_exit_code 0
 
-run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --sim_filter [['perimeter', 0.2]]
+run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --sim_filter '[['perimeter', 0.2]]'
 assert_no_stdout
 assert_exit_code 0
 
-run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --out_filter [['axis_major_length', 0.2, 1]]
+run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --out_filter '[['axis_major_length', 0.2, 1]]'
 assert_no_stdout
 assert_exit_code 0
 
-run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --best_filter [['roughness_surface', 'min', 1]]
+run test_blob_main python ../blob_main.py --file_name '../example_images/ex1.tif' --best_filter '[['roughness_surface', 'min', 1]]'
 assert_no_stdout
 assert_exit_code 0
 
