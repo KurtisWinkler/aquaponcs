@@ -62,31 +62,48 @@ The output of the function is a numpy array of pixel intensities and an output f
 
 ## Examples 
 Using the input image,
-![Input](./example_images/readme_images/ex6.png)
+![Input](./example_images/ex6.tif)
 
 we recommend the following workflow:
 1. Change to gray scale
+
 ![Grayscale](./example_images/readme_images/ex6_gray.png)
+
 2. Blur the image
+
 ![Blurred](./example_images/readme_images/ex6_blur.png)
+
 3. Identify the peak local maxima
+
 ![Peak local maxima](./example_images/readme_images/ex6_peaklocalmax.png)
+
 4. Identify maxima blobs
+
 ![Maxima blobs](./example_images/readme_images/ex6_maximablobs.png)
+
 5. Filter blobs
+
 ![Filtered blobs](./example_images/readme_images/ex6_filtered.png)
+
 6. Filter similar blobs
+
 ![Identify unique blobs](./example_images/readme_images/ex6_similar.png)
+
 7. Filter outlier blobs
+
 ![Remove outlier blobs](./example_images/readme_images/ex6_outlier.png)
+
 8. Score the best blobs (based on user-defined criteria)
+
 ![Score best blobs](./example_images/readme_images/ex6_best.png)
+
 9. Output final image
+
 ![Output](./example_images/readme_images/ex6_final.png)
 
 ### Thresholds
 Using the input image,
-![Input](./example_images/readme_images/ex3.png)
+![Input](./example_images/ex3.tif)
 
 different threshold values can be applied to detect different blobs. The following examples process the above example with thresholds of 50, 80, 110, and 140:
 
