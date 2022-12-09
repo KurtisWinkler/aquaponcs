@@ -744,6 +744,12 @@ def final_blobs_filter(blobs):
     final_blobs : list
         Copy of blobs without unnessessary blobs
     """
+    if not isinstance(blobs, list):
+        raise TypeError('blobs must be a list')
+
+    if not all((isinstance(blob, bc.Blob) for blob in blobs)):
+        raise TypeError('blobs must only contain blobs')
+
     # get blob centers
     blob_centers = [[int(blob.centroid_xy[0]), int(blob.centroid_xy[1])]
                     for blob in blobs]
