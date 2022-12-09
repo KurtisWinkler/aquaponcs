@@ -45,8 +45,8 @@ def flatten(L, flat_list=None):
     flat_list : list
         Flattened version of original list
     """
-    if not isinstance(L, list):
-        raise TypeError('L must be a list')
+    if not isinstance(L, (list, np.ndarray)):
+        raise TypeError('L must be a list or numpy array')
 
     # initialize flat list on first call
     if flat_list is None:
@@ -722,8 +722,17 @@ def blob_best(blob_list, criteria):
 
 def final_blobs_filter(blobs):
     """
-    Finds blobs that may overlap and removes larger,
+    Finds blobs that may overlap and removes
     unncessary blobs from list
+
+    Descripton
+    ----------
+    This is similar to making a tree where each parent blob contains
+    children blobs which are inside of the parent blob. However, only
+    the children for each blob are determined. If a parent blob has 1
+    child, then the child is removed as the parent encomposses the larger
+    overall blob. If the parent contains 2 or more chldren, the parent is
+    removedas the child blobs better seperate out blobs in the image.
 
     Parameters
     ----------
@@ -735,42 +744,66 @@ def final_blobs_filter(blobs):
     final_blobs : list
         Copy of blobs without unnessessary blobs
     """
-    if not isinstance(blobs, list):
-        raise TypeError('blob_list must be a list')
-
-    if not all((isinstance(blob, bc.Blob) for blob in blobs)):
-        raise TypeError('blob_list must only contain blobs')
-
     # get blob centers
     blob_centers = [[int(blob.centroid_xy[0]), int(blob.centroid_xy[1])]
                     for blob in blobs]
-    # remove duplicates
-    blob_centers = [list(y) for y in set([tuple(x) for x in blob_centers])]
 
-    # initialize list to group blobs based on blob centroids
-    blob_groups = [[] for pt in blob_centers]
-    for blob in blobs:
-        maxima, idxs = maxima_filter(blob.contour, blob_centers)
-        # for each center blob contains, add to blob_groups idx
-        if idxs is not None:
-            for idx in idxs:
-                blob_groups[idx].append(blob)
+    # sort by area - largest first
+    blob_area = [blob.area_filled for blob in blobs]
+    blob_rank = np.argsort(-np.array(blob_area))
+    blob_centers = np.array(blob_centers)[blob_rank].astype(np.uint16)
+    final_blobs = np.array(blobs)[blob_rank]
 
-    # filter blobs to get non-overlapping blobs
-    final_blobs = blobs.copy()
-    for blobs in blob_groups:
-        # if blob_groups idx contain more than one blob
-        # indicates one point contains multiple blobs
-        if len(blobs) > 1:
-            # find blob with smallest area and keep that one
-            # blob larger than smallest contain multiple center points
-            # and are unneccearily large
-            area = [blob.area for blob in blobs]
-            min_area = min(area)
-            for i in range(len(area)):
-                if area[i] != min_area:
-                    # remove needed blobs from final_blobs
-                    if blobs[i] in final_blobs:
-                        final_blobs.remove(blobs[i])
+    # Initialize values for for loop
+    children = [[]]  # will be changed promptly
+    num_iter = 0  # number of iterations
+    first_flag = True
+    while ((max([len(x) for x in children]) != 0 or first_flag is True)
+           and num_iter <= 10):
+
+        # only run after first go (if children blobs found)
+        if first_flag is False:
+            blobs_to_remove = []
+            for i in range(len(children)):
+
+                # if only one child, keep parent
+                # parent encompasses more and is likely correct
+                if len(children[i]) == 1:
+                    blobs_to_remove.append(children[i][0])
+
+                # if >= 2 children, keep children
+                # parent encompasses multiple blobs and is likely incorrect
+                elif len(children[i]) >= 2:
+                    blobs_to_remove.append(i)
+
+            final_blobs = np.delete(final_blobs, blobs_to_remove)
+            blob_centers = np.array([list(pt) for i, pt
+                                     in enumerate(blob_centers)
+                                     if i not in blobs_to_remove]
+                                    ).astype(np.uint16)
+
+        # Find children for each blob
+        # each idx in children corresponds to blob
+        children = [[] for i in final_blobs]
+
+        # i is index of potential child blob
+        # j is index of parent blob
+        # In for loop:
+        # i is blobs in order of desending area
+        for i in range(len(final_blobs)):
+            # j is blobs larger than blobs[i] in ascending order
+            for j in range(i-1, -1, -1):
+                # Determine if blobs[i] is in blobs[j] and
+                # break if found (smallest blob containing blobs[i]
+                # is found)
+                if cv.pointPolygonTest(final_blobs[j].cv_contour,
+                                       blob_centers[i],
+                                       False) == 1:
+
+                    children[j].append(i)
+                    break
+
+        first_flag = False  # first pass over
+        num_iter += 1
 
     return final_blobs
