@@ -1,4 +1,4 @@
-# aquaponcs
+# AQUAPONCS
 Algorithm to Quantify Properties of Nuclear and Chromatin Structure
 
 ## Installation
@@ -22,13 +22,21 @@ Visualizing chromatin dispersal and nuclear structure can reveal information abo
 The main workflow for blob detection is carried out through blob_main.py. Users must define the following arguments as described in blob_args.py: 
 
 --file_name (str): the name of the input image file to be processed
+
 --min_distance (int): minimum pixel distance between blob maxima. Decreasing will allow for greater granularity for detection of overlapping blobs (default: 10)
+
 --min_thresh_maxima (float): minimum relative intensity threshold for maxima (default: 0.8)
+
 --min_thresh_contours (float): minimum relative threshold for contours (default: 0.8)
+
 --thresh_step (int): step size for finding contours (default: 5)
+
 --init_filter (list): the initial filter for removing blobs. This could be used for removing blobs based on user-defined parameters (ie, too small of area, non-uniform circularity). (default: None)
+
 --sim_filter (list): filters for similar blobs. Differentiates between unique blobs (default: None)
+
 --out_filter (list): filters for outlier blobs whose parameters fall outside of a user-defined range (default: None) 
+
 --best_filter (list): user-defined criteria to determine which parameters are used to score and identify the best blobs (default: None) 
 
 If the user does not wish to include initial, similar, or outlier filters, the following optional arguments can be added: 
@@ -62,7 +70,7 @@ The output of the function is a numpy array of pixel intensities and an output f
 
 ## Examples 
 Using the input image,
-![Input](./example_images/ex6.tif)
+![Input](./example_images/readme_images/ex6.png)
 
 we recommend the following workflow:
 1. Change to gray scale
@@ -103,7 +111,7 @@ we recommend the following workflow:
 
 ### Thresholds
 Using the input image,
-![Input](./example_images/ex3.tif)
+![Input](./example_images/readme_images/ex3.png)
 
 different threshold values can be applied to detect different blobs. The following examples process the above example with thresholds of 50, 80, 110, and 140:
 
