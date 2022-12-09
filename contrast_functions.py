@@ -1,26 +1,24 @@
 import numpy as np
 from skimage import exposure
 
+
 def min_max_rescale(image):
     '''
     Description:
-    Improves the contrast of the image by rescaling the minimum and maximum 
+    Improves the contrast of the image by rescaling the minimum and maximum
     pixel intensity values
 
     Input:
-    file: str
-        file path for the image
-    max_rescale: int
-        the pixel intensity value to rescale the current maximum up to
-    min_rescale: int
-        the pixel intensity value to rescale the current maximum down to
-    output_name: str 
-        the file path for the output .png
-    Output: 
-    minmax_data: array 
+    image: array
+        image to scale
+    Output:
+    minmax_data: array
         numpy array of pixel intensities to be saved as a .png
 
     '''
+    if not isinstance(image, (list, np.ndarray)):
+        raise TypeError('image must be a list or numpy array')
+
     # Rescale the min and max pixel intensity values
     image_minmax_scaled = exposure.rescale_intensity(image)
 
@@ -29,22 +27,31 @@ def min_max_rescale(image):
 
 def percentile_rescale(image, min_percentile, max_percentile):
     '''
-    Description: 
-    Improves the contrast of the image by rescaling the percentile 
+    Description:
+    Improves the contrast of the image by rescaling the percentile
     pixel intensity values
 
     Input:
-    file: str
-        file path for the image
+    image: array
+        image to scale
     min_percentile: int or float
-        minimum percentile to rescale 
+        minimum percentile to rescale
     max_percentile: int or float
         maximum percentile to rescale
 
-    Output: 
-    scaled: numpy ndarray 
+    Output:
+    scaled: numpy ndarray
         scaled version of input image
     '''
+    if not isinstance(image, (list, np.ndarray)):
+        raise TypeError('image must be a list or numpy array')
+
+    if not isinstance(min_percentile, (int, float)):
+        raise TypeError('min_percentile must be an int or float')
+
+    if not isinstance(max_percentile, (int, float)):
+        raise TypeError('max_percentile must be an int or float')
+
     # get image percentiles for rescaling
     percentiles = np.percentile(image, (min_percentile, max_percentile))
 
