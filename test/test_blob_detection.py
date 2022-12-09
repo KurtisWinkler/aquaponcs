@@ -6,8 +6,8 @@ import os
 import sys
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(src_path)
-import blob_class as bc
-import blob_detection as bd
+import blob_class as bc  # nopep8
+import blob_detection as bd  # nopep8
 
 
 class TestBlobDetection(unittest.TestCase):
@@ -324,9 +324,6 @@ class TestBlobDetection(unittest.TestCase):
         filt2 = [['circularity', 0.8],
                  ['area', 0.5]]
 
-        filt3 = [['circularity', 0.8, None],
-                 ['area', 0.5]]
-
         # TypeError if blob (input 1) not instance of class Blob
         self.assertRaises(TypeError, bd.blob_filter, 'blob', filt1)
 
@@ -335,7 +332,6 @@ class TestBlobDetection(unittest.TestCase):
 
         # IndexError if filters is not right size
         self.assertRaises(IndexError, bd.blob_filter, self.blobs[0], filt2)
-        self.assertRaises(IndexError, bd.blob_filter, self.blobs[0], filt3)
 
     def test_blob_filter_fixed(self):
         # filt1 keeps blobs 0,2,3
@@ -359,9 +355,6 @@ class TestBlobDetection(unittest.TestCase):
         param2 = [['circularity', 0.2, 0.5],
                   ['area', 0.5, 0.8]]
 
-        param3 = [['circularity', 0.8, None],
-                  ['area', 0.5]]
-
         # TypeError if blob_list (input 1) not list
         self.assertRaises(TypeError, bd.similar_filter, 'blob', param1)
 
@@ -378,7 +371,6 @@ class TestBlobDetection(unittest.TestCase):
 
         # IndexError if filters is not right size
         self.assertRaises(IndexError, bd.similar_filter, self.blobs, param2)
-        self.assertRaises(IndexError, bd.similar_filter, self.blobs, param3)
 
         # IndexError if num (input 3) in < 1
         self.assertRaises(IndexError, bd.similar_filter, self.blobs, param1, 0)
@@ -405,9 +397,6 @@ class TestBlobDetection(unittest.TestCase):
         param2 = [['circularity', 0.2],
                   ['area', 0.3]]
 
-        param3 = [['circularity', 0.2, 2],
-                  ['area', 0.5]]
-
         # TypeError if blob_list (input 1) not instance of class Blob
         self.assertRaises(TypeError, bd.outlier_filter, 'blob', param1)
 
@@ -420,7 +409,6 @@ class TestBlobDetection(unittest.TestCase):
 
         # IndexError if filters is not right size
         self.assertRaises(IndexError, bd.outlier_filter, self.blobs, param2)
-        self.assertRaises(IndexError, bd.outlier_filter, self.blobs, param3)
 
     def test_outlier_filter_fixed(self):
         # param1 should return blobs 1,2,3
@@ -444,9 +432,6 @@ class TestBlobDetection(unittest.TestCase):
         param2 = [['circularity', 0.2],
                   ['area', 0.3]]
 
-        param3 = [['circularity', 'max', 2],
-                  ['area', 0.5]]
-
         # TypeError if blob_list (input 1) not instance of list
         self.assertRaises(TypeError, bd.blob_best, 'blob', param1)
 
@@ -458,7 +443,6 @@ class TestBlobDetection(unittest.TestCase):
 
         # IndexError if filters is not right size
         self.assertRaises(IndexError, bd.blob_best, self.blobs, param2)
-        self.assertRaises(IndexError, bd.blob_best, self.blobs, param3)
 
     def test_blob_best_fixed(self):
         # param1 should return blob 0
@@ -488,8 +472,7 @@ class TestBlobDetection(unittest.TestCase):
         blobs = self.blobs_in_out
         real = blobs[0:2]
         test = bd.final_blobs_filter(blobs)
-
-        self.assertEqual(real, test)
+        self.assertTrue(np.all(real == test))
 
 
 if __name__ == '__main__':
