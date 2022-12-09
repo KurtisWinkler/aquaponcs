@@ -13,7 +13,7 @@ args = ba.get_args()
 
 # create initial filters for blobs
 if args.init_filter is None:
-    init_filter = [['area', 25, None],
+    init_filter = [['area_filled', 20, None],
                    ['circularity', 0.9, None],
                    ['ellipse_fit_residual_mean', None, 1],
                    ['pixel_kurtosis', None, 0]]
@@ -120,6 +120,8 @@ if args.no_sim_filter is False:
     cv.imwrite('7_similar_blobs.jpg', bd.blob_im(im_scaled, sim_blobs))
 else:
     sim_blobs = blob_list
+    sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
+
 
 # filter out outliers
 if args.no_out_filter is False:
