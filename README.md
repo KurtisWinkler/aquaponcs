@@ -70,6 +70,7 @@ The output of the function is a numpy array of pixel intensities and an output f
 
 ## Examples 
 Using the input image,
+
 ![Input](./example_images/readme_images/ex6.png)
 
 we recommend the following workflow:
@@ -111,6 +112,7 @@ we recommend the following workflow:
 
 ### Thresholds
 Using the input image,
+
 ![Input](./example_images/readme_images/ex3.png)
 
 different threshold values can be applied to detect different blobs. The following examples process the above example with thresholds of 50, 80, 110, and 140:
