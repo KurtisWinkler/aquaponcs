@@ -60,35 +60,33 @@ output_name (str): name of the proessed output image to be used in workflow down
 
 The output of the function is a numpy array of pixel intensities and an output file image. 
 
-
-![plot](./directory_1/directory_2/.../directory_n/plot.png)
 ## Examples 
 Using the input image,
-![Input](./aquaponcs/example_images/readme_images/ex6.png)
+![Input](./example_images/readme_images/ex6.png)
 
 we recommend the following workflow:
 1. Change to gray scale
-![Grayscale](./aquaponcs/example_images/readme_images/ex6_gray.png)
+![Grayscale](./example_images/readme_images/ex6_gray.png)
 2. Blur the image
-![Blurred](./aquaponcs/example_images/readme_images/ex6_blur.png)
+![Blurred](./example_images/readme_images/ex6_blur.png)
 3. Identify the peak local maxima
-![Peak local maxima](./aquaponcs/example_images/readme_images/ex6_peaklocalmax.png)
+![Peak local maxima](./example_images/readme_images/ex6_peaklocalmax.png)
 4. Identify maxima blobs
-![Maxima blobs](./aquaponcs/example_images/readme_images/ex6_maximablobs.png)
+![Maxima blobs](./example_images/readme_images/ex6_maximablobs.png)
 5. Filter blobs
-![Filtered blobs](./aquaponcs/example_images/readme_images/ex6_filtered.png)
+![Filtered blobs](./example_images/readme_images/ex6_filtered.png)
 6. Filter similar blobs
-![Identify unique blobs](./aquaponcs/example_images/readme_images/ex6_similar.png)
+![Identify unique blobs](./example_images/readme_images/ex6_similar.png)
 7. Filter outlier blobs
-![Remove outlier blobs](./aquaponcs/example_images/readme_images/ex6_outlier.png)
+![Remove outlier blobs](./example_images/readme_images/ex6_outlier.png)
 8. Score the best blobs (based on user-defined criteria)
-![Score best blobs](./aquaponcs/example_images/readme_images/ex6_best.png)
+![Score best blobs](./example_images/readme_images/ex6_best.png)
 9. Output final image
-![Output](./aquaponcs/example_images/readme_images/ex6_final.png)
+![Output](./example_images/readme_images/ex6_final.png)
 
 ### Thresholds
 Using the input image,
-![Input](./aquaponcs/example_images/readme_images/ex3.png)
+![Input](./example_images/readme_images/ex3.png)
 
 different threshold values can be applied to detect different blobs. The following examples process the above example with thresholds of 50, 80, 110, and 140:
 
