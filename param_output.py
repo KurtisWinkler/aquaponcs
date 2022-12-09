@@ -52,6 +52,14 @@ funcs = [
 
 
 def build_dict():
+    """
+    Creates a dictionary
+
+    Returns
+    -------
+    blob_params
+        dictionary containing blob parameters
+    """
     blob_params = {}
     for property in funcs:
         blob_params[property] = []
@@ -60,6 +68,29 @@ def build_dict():
 
 
 def add_value(blob_params, blob, dec=2):
+    """
+    Adds values to the dictionary
+
+    Parameters
+    ----------
+    blobs_params : dict
+        contains blob_params
+
+    blob : Blob object (class Blob)
+        blob who's properties will be added to dictionary
+
+    dec : int
+        number of places after decimal point for properties
+    """
+    if not isinstance(blob_params, dict):
+        raise TypeError('blob_params must be a dict')
+
+    if not isinstance(blob, bc.Blob):
+        raise TypeError('blob must be instance of Blob')
+
+    if not isinstance(dec, int):
+        raise TypeError('dec must be an int')
+
     for i in range(len(funcs)):
         try:
             val = eval('blob.' + funcs[i])
@@ -69,13 +100,38 @@ def add_value(blob_params, blob, dec=2):
             blob_params[funcs[i]].append(str(np.around(val, dec)))
 
 
-def get_params(blobs):
+def get_params(blobs, dec=2):
+    """
+    Returns dataframe of blob properties
+
+    Parameters
+    ----------
+    blobs : list of Blob objects (class Blob)
+        Contains blobs who's parameter will be calculated
+
+    dec : int
+        number of places after decimal point for properties
+
+    Returns
+    -------
+    df - Pandas dataframe
+        dataframe containing properties of each blob
+    """
+    if not isinstance(blobs, (list, np.ndarray)):
+        raise TypeError('blobs must be a list or numpy array')
+
+    if not all((isinstance(blob, bc.Blob) for blob in blobs)):
+        raise TypeError('blobs must only contain blobs')
+
+    if not isinstance(dec, int):
+        raise TypeError('dec must be an int')
+
     # Create dictionary
     blob_params = build_dict()
 
     # Get properties for each blobs
     for blob in blobs:
-        add_value(blob_params, blob)
+        add_value(blob_params, blob, dec=dec)
 
     # Transfer dictionary to pandas dataframe
     df = pd.DataFrame(blob_params,
