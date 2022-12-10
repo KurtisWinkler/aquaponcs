@@ -5,8 +5,6 @@ Algorithm to Quantify Properties of Nuclear and Chromatin Structure
 conda create -n aqua\
 source activate aqua
 
-python 3.10.4
-
 conda install pip (v. 22.1.2)\
 pip install numpy (v. 1.23.3)\
 pip install pandas (v. 1.5.2)\
@@ -31,18 +29,20 @@ The main workflow for blob detection is carried out through blob_main.py. Users 
 
 --thresh_step (int): step size for finding contours (default: 5)
 
---init_filter (list): the initial filter for removing blobs. This could be used for removing blobs based on user-defined parameters (ie, too small of area, non-uniform circularity). (default: None)
-
---sim_filter (list): filters for similar blobs. Differentiates between unique blobs (default: None)
-
---out_filter (list): filters for outlier blobs whose parameters fall outside of a user-defined range (default: None) 
-
---best_filter (list): user-defined criteria to determine which parameters are used to score and identify the best blobs (default: None) 
-
 If the user does not wish to include initial, similar, or outlier filters, the following optional arguments can be added: 
 --no_init_filter
 --no_sim_filter
 --no_out_filter
+
+The following can be modified directly in blob_main.py:
+
+init_filter (list): the initial filter for removing blobs. This could be used for removing blobs based on user-defined parameters (ie, too small of area, non-uniform circularity). (default: None)
+
+sim_filter (list): filters for similar blobs. Differentiates between unique blobs (default: None)
+
+out_filter (list): filters for outlier blobs whose parameters fall outside of a user-defined range (default: None) 
+
+best_filter (list): user-defined criteria to determine which parameters are used to score and identify the best blobs (default: None) 
 
 ### Blob Class and Parameters (blob_class.py and blob_params.py)
 blob_class.py creates a class object, blob, to get attributes of all blobs. It inherits from the RegionProperties class in scikit-image. A list of properties can be found in sci-kit documentation: 
@@ -55,18 +55,6 @@ orig_image (image matrix): original image that the contour was generated from
 label_im (matrix): image labeled by region and contours
 
 Methods associated with the class can be read in blob_class.py
-
-blob_params.py contains a set of functions to describe blobs that relies on the attributes of blob_class. These functions include get_center, get_circularity, get_solidity, get_aspectRatio, and get_roundness.
-
-
-### Contrast Function
-The contrast function rescales input images by a percentage of pixel intensity defined by the user. It takes arguments for:
-file (str): the name of the input image
-max_rescale (int): the pixel intensity value to rescale the current maximum up to
-min_rescale (int): the pixel intensity value to rescale the current maximum down to
-output_name (str): name of the proessed output image to be used in workflow downstream 
-
-The output of the function is a numpy array of pixel intensities and an output file image. 
 
 ## Examples 
 Using the input image,
@@ -115,8 +103,6 @@ Using the input image,
 
 ![Input](./example_images/readme_images/ex3.png)
 
-different threshold values can be applied to detect different blobs. The following examples process the above example with thresholds of 50, 80, 110, and 140:
+different threshold values can be applied to detect different blobs. The contours of these thresholds are used to find blobs. The following examples process the above example with thresholds of 50, 80, 110, and 140:
 
 ![Examples of four different thresholds](./example_images/readme_images/ex3_thresholds50_80_110_140.png)
-
-

@@ -42,31 +42,7 @@ def get_args():
     parser.add_argument('--thresh_step',
                         type=int,
                         help='step size for finding contours',
-                        default=5)
-
-    # add argument for init_filter
-    parser.add_argument('--init_filter',
-                        type=list,
-                        help='initial filter to remove blobs',
-                        default=None)
-
-    # add argument for sim_filter
-    parser.add_argument('--sim_filter',
-                        type=list,
-                        help='filter to remove non-similar blobs',
-                        default=None)
-
-    # add argument for out_filter
-    parser.add_argument('--out_filter',
-                        type=list,
-                        help='filter to remove outlier blobs',
-                        default=None)
-
-    # add argument for best_filter
-    parser.add_argument('--best_filter',
-                        type=list,
-                        help='criteria to choose best blobs',
-                        default=None)
+                        default=10)
 
     # ADD OPTIONS TO NOT INCLUDE init/sim/out_filter
     parser.add_argument('--no_init_filter',

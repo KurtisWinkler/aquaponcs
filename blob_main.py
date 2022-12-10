@@ -8,36 +8,26 @@ import contrast_functions as cf
 import nucleus_contour as nc
 import param_output as po
 
-# get input arguments
-args = ba.get_args()
-
 # create initial filters for blobs
-if args.init_filter is None:
-    init_filter = [['area', 25, None],
-                   ['circularity', 0.9, None],
-                   ['ellipse_fit_residual_mean', None, 1],
-                   ['pixel_kurtosis', None, 0]]
-else:
-    init_filter = args.init_filter
+init_filter = [['area_filled', 20, None],
+               ['circularity', 0.9, None],
+               ['ellipse_fit_residual_mean', None, 1],
+               ['pixel_kurtosis', None, 0]]
 
 # create filter to get blobs most simliar to each other
-if args.sim_filter is None:
-    sim_filter = [['pixel_intensity_percentile(10)', 0.2]]
-else:
-    sim_filter = args.sim_filter
+sim_filter = [['pixel_intensity_percentile(10)', 0.2]]
+
 
 # create filter to remove outlier blobs
-if args.out_filter is None:
-    out_filter = [['pixel_intensity_percentile(10)', 0.2, 1]]
-else:
-    out_filter = args.out_filter
+out_filter = [['pixel_intensity_percentile(10)', 0.2, 1]]
+
 
 # create criteria for determining best blob
-if args.best_filter is None:
-    best_filter = [['area_filled', 'max', 1],
-                   ['roughness_surface', 'min', 1]]
-else:
-    best_filter = args.best_filter
+best_filter = [['area_filled', 'max', 1],
+               ['roughness_surface', 'min', 1]]
+
+# get input arguments
+args = ba.get_args()
 
 # read in image and save
 im = cv.imread(args.file_name)
@@ -120,6 +110,8 @@ if args.no_sim_filter is False:
     cv.imwrite('7_similar_blobs.jpg', bd.blob_im(im_scaled, sim_blobs))
 else:
     sim_blobs = blob_list
+    sim_blobs = [blobs for blobs in sim_blobs if blobs]
+
 
 # filter out outliers
 if args.no_out_filter is False:
