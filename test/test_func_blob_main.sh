@@ -19,7 +19,7 @@ run test_blob_main4 python ../blob_main.py --file_name '../example_images/ex1.ti
 assert_no_stdout
 assert_exit_code 0
 
-run test_blob_main5 python ../blob_main.py --file_name '../example_images/ex1.tif' --thresh_step 3
+run test_blob_main5 python ../blob_main.py --file_name '../example_images/ex1.tif' --thresh_step 20
 assert_no_stdout
 assert_exit_code 0
 
