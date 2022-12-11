@@ -31,7 +31,7 @@ args = ba.get_args()
 
 # read in image and save
 im = cv.imread(args.file_name)
-cv.imwrite('1_original_image.jpg', im)
+cv.imwrite('01_original_image.jpg', im)
 
 # scale image so that at least 0.35% of pixels
 # are at the min and max (0 and 255)
@@ -40,11 +40,11 @@ im_scaled = cf.percentile_rescale(im, 0.35, 99.65)
 # convert image to gray scale
 im_gray = cv.cvtColor(im_scaled, cv.COLOR_BGR2GRAY)
 
-cv.imwrite('2_scaled_gray_image.jpg', im_gray)
+cv.imwrite('02_scaled_gray_image.jpg', im_gray)
 
 # blur image and save
 im_blur = cv.GaussianBlur(im_gray, (15, 15), 0)
-cv.imwrite('3_blurred_image.jpg', im_blur)
+cv.imwrite('03_blurred_image.jpg', im_blur)
 
 # Get contour of nucleus
 nuc_contour = nc.nucleus_contour(im_gray,
@@ -55,7 +55,7 @@ nuc_contour = nc.nucleus_contour(im_gray,
 nuc_blur = bc.Blob(nuc_contour, im_blur)
 
 # save image with all blob contours
-cv.imwrite('3.5_nucleus_contour.jpg', bd.blob_im(im_scaled, [nuc_blur]))
+cv.imwrite('04_nucleus_contour.jpg', bd.blob_im(im_scaled, [nuc_blur]))
 
 # find maxima in nucleus
 local_max_coords = bd.get_maxima(image=nuc_blur,
@@ -66,7 +66,7 @@ local_max_coords = bd.get_maxima(image=nuc_blur,
 im_maxima = im_scaled.copy()
 for coordinate in local_max_coords:
     cv.circle(im_maxima, (coordinate), 2, (0, 0, 255), 2)
-cv.imwrite('4_peak_local_maxima.jpg', im_maxima)
+cv.imwrite('05_peak_local_maxima.jpg', im_maxima)
 
 # set minimum threshold to find contours
 min_thresh = int(nuc_blur.pixel_intensity_percentile(
@@ -86,7 +86,7 @@ contour_list = bd.organize_contours(contours,
 contour_list = [contour for contour in contour_list if contour]
 
 # save image with all blob contours
-cv.imwrite('5_maxima_blobs.jpg', bd.blob_im(im_scaled, contour_list))
+cv.imwrite('06_maxima_blobs.jpg', bd.blob_im(im_scaled, contour_list))
 
 # filter blobs based on filters list
 if args.no_init_filter is False:
@@ -96,7 +96,7 @@ if args.no_init_filter is False:
                           if bd.blob_filter(x, init_filter)])
 
     # save image with filtered contours
-    cv.imwrite('6_filtered_blob.jpg', bd.blob_im(im_scaled, blob_list))
+    cv.imwrite('07_filtered_blob.jpg', bd.blob_im(im_scaled, blob_list))
 else:
     blob_list = contour_list
 
@@ -107,7 +107,7 @@ if args.no_sim_filter is False:
     sim_blobs = [blobs for blobs in sim_blobs if blobs is not None]
 
     # save image with most similar blobs contours for each unique_point
-    cv.imwrite('7_similar_blobs.jpg', bd.blob_im(im_scaled, sim_blobs))
+    cv.imwrite('08_similar_blobs.jpg', bd.blob_im(im_scaled, sim_blobs))
 else:
     sim_blobs = blob_list
     sim_blobs = [blobs for blobs in sim_blobs if blobs]
@@ -118,7 +118,7 @@ if args.no_out_filter is False:
     no_outs = [bd.outlier_filter(blobs, out_filter) for blobs in sim_blobs]
 
     # save image with blobs that are not outliers
-    cv.imwrite('8_no_outlier_blobs.jpg', bd.blob_im(im_scaled, no_outs))
+    cv.imwrite('09_no_outlier_blobs.jpg', bd.blob_im(im_scaled, no_outs))
 else:
     no_outs = sim_blobs
 
@@ -126,13 +126,13 @@ else:
 blobs_best = [bd.blob_best(blobs, best_filter) for blobs in no_outs]
 
 # save image with best blobs for each unique_point
-cv.imwrite('9_best_blobs.jpg', bd.blob_im(im_scaled, blobs_best))
+cv.imwrite('10_best_blobs.jpg', bd.blob_im(im_scaled, blobs_best))
 
 # remove any overlapping, unncessessary blobs
 final_blobs = bd.final_blobs_filter(blobs_best)
 
 # save image with final blob contours
-cv.imwrite('10_final_blobs.jpg', bd.blob_im(im_scaled, final_blobs))
+cv.imwrite('11_final_blobs.jpg', bd.blob_im(im_scaled, final_blobs))
 
 # convert blobs to original image instead of blurred
 final_blobs = [bc.Blob(blob.cv_contour, im_scaled) for blob in final_blobs]

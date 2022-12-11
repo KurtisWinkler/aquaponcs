@@ -1,16 +1,23 @@
 # AQUAPONCS
 Algorithm to Quantify Properties of Nuclear and Chromatin Structure
 
-## Installation
-conda create -n aqua\
-source activate aqua
+## Set-up
+Create a conda environment:\
+`conda create -n aqua`\
+`source activate aqua`
 
-conda install pip (v. 22.1.2)\
-pip install numpy (v. 1.23.3)\
-pip install pandas (v. 1.5.2)\
-pip install matplotlib (v. 3.6.0)\
-pip install opencv-python (v. 4.6.0.66)\
-pip install -U scikit-image (v. 0.19.3)
+Install following packages (version number optional):\
+`conda install pip`\
+`pip install numpy pandas matplotlib opencv-python scikit-image`\
+pip (v. 22.1.2)\
+numpy (v. 1.23.3)\
+pandas (v. 1.5.2)\
+matplotlib (v. 3.6.0)\
+opencv-python (v. 4.6.0.66)\
+scikit-image (v. 0.19.3)
+
+Test that the code works:\
+`python blob_main.py --file_name example_images/ex111.tif`
 
 ## Purpose 
 Visualizing chromatin dispersal and nuclear structure can reveal information about cell stability, gene expression, and cell fate. Current image processing pipelines are largely qualitative, creating a need for an algorithm to quantify nuclear structure and detect/measure properties of chromatin blobs. AQUAPONCS utilizes openCV and scikit image packages to process input images, identify nucleus contours, identify chromatin blob contours, measure parameters of blobs, and filter/score blobs. The software outputs a processed image along with a .csv file quantifying the structure of the nucleus and chromatin.  
