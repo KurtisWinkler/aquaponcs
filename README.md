@@ -7,12 +7,14 @@ Create a conda environment:\
 `source activate aqua`
 
 Install following packages (version number optional):\
-`conda install pip` (v. 22.1.2)\
-`pip install numpy` (v. 1.23.3)\
-`pip install pandas` (v. 1.5.2)\
-`pip install matplotlib` (v. 3.6.0)\
-`pip install opencv-python` (v. 4.6.0.66)\
-`pip install -U scikit-image` (v. 0.19.3)
+`conda install pip`\
+`pip install numpy pandas matplotlib opencv-python scikit-image`\
+pip (v. 22.1.2)\
+numpy (v. 1.23.3)\
+pandas (v. 1.5.2)\
+matplotlib (v. 3.6.0)\
+opencv-python (v. 4.6.0.66)\
+scikit-image (v. 0.19.3)
 
 Test that the code works:\
 `python blob_main.py --file_name example_images/ex111.tif`
