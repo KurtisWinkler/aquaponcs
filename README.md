@@ -2,13 +2,11 @@
 Algorithm to Quantify Properties of Nuclear and Chromatin Structure
 
 ## Set-up
-Create a conda environment:
-
-`conda create -n aqua`
+Create a conda environment:\
+`conda create -n aqua`\
 `source activate aqua`
 
-Install following packages (version number optional):
-
+Install following packages (version number optional):\
 `conda install pip` (v. 22.1.2)\
 `pip install numpy` (v. 1.23.3)\
 `pip install pandas` (v. 1.5.2)\
@@ -16,7 +14,7 @@ Install following packages (version number optional):
 `pip install opencv-python` (v. 4.6.0.66)\
 `pip install -U scikit-image` (v. 0.19.3)
 
-Test that the code works:
+Test that the code works:\
 `python blob_main.py --file_name example_images/ex111.tif`
 
 ## Purpose 
