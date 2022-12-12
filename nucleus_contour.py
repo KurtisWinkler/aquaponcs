@@ -68,7 +68,7 @@ def nucleus_contour(image, num_iter=10, smoothing=3):
 
 
 if __name__ == '__main__':
-    image = cv.imread('ex6.tif')
+    image = cv.imread('example_images/ex6.tif')
     image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     image = cfs.percentile_rescale(image, 0.35, 99.65)
     contour = nucleus_contour(image,

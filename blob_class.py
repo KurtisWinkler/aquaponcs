@@ -390,7 +390,7 @@ class Blob(RegionProperties):
 
 
 def main():
-    im = cv.imread("ex3.tif")
+    im = cv.imread("example_images/ex3.tif")
     im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
     im_blur = cv.GaussianBlur(im_gray, (25, 25), 0)
     ret, im_thresh = cv.threshold(im_blur, 125, 255, cv.THRESH_BINARY)
