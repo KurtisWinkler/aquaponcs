@@ -12,18 +12,29 @@ import param_output as po
 def main():
 
     # create initial filters for blobs
+    # 1 - blob parameter
+    # 2 - min value of parameter or None
+    # 3 - max value of parameter or None
     init_filter = [['area_filled', 20, None],
                    ['circularity', 0.9, None],
                    ['ellipse_fit_residual_mean', None, 1],
                    ['pixel_kurtosis', None, 0]]
 
     # create filter to get blobs most simliar to each other
+    # 1 - blob parameter
+    # 2 - percent threshold for similarity
     sim_filter = [['pixel_intensity_percentile(10)', 0.2]]
 
     # create filter to remove outlier blobs
+    # 1 - blob parameter
+    # 2 - percent threshold for removing outlier
+    # 3 - zscore threshold for removing outlier
     out_filter = [['pixel_intensity_percentile(10)', 0.2, 1]]
 
     # create criteria for determining best blob
+    # 1 - blob parameter
+    # 2 - ideal parameter value; or 'min' or 'max'
+    # 3 - criteria factor to multiply score by
     best_filter = [['area_filled', 'max', 1],
                    ['roughness_surface', 'min', 1]]
 
