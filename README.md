@@ -2,7 +2,7 @@
 Algorithm to Quantify Properties of Nuclear and Chromatin Structure
 
 ## Set-up
-Create a conda environment:\
+Create a conda environment and activate it:\
 `conda create -n aqua`\
 `source activate aqua`
 
@@ -15,6 +15,10 @@ pandas (v. 1.5.2)\
 matplotlib (v. 3.6.0)\
 opencv-python (v. 4.6.0.66)\
 scikit-image (v. 0.19.3)
+
+Clone aquaponcs repo and cd into it:\
+`git clone https://github.com/KurtisWinkler/aquaponcs.git`\
+`cd aquaponcs` 
 
 Test that the code works:\
 `python blob_main.py --file_name example_images/ex111.tif`
