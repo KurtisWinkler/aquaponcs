@@ -40,9 +40,9 @@ The main workflow for blob detection is carried out through blob_main.py. Users 
 
 `--thresh_step` (int): step size for finding contours (default: 5)
 
-If the user does not wish to include initial, similar, or outlier filters, the following optional arguments can be added: 
-`--no_init_filter`
-`--no_sim_filter`
+If the user does not wish to include initial, similar, or outlier filters, the following optional arguments can be added:\
+`--no_init_filter`\
+`--no_sim_filter`\
 `--no_out_filter`
 
 The following can be modified directly in blob_main.py:
