@@ -100,7 +100,7 @@ def add_value(blob_params, blob, dec=2):
             blob_params[funcs[i]].append(str(np.around(val, dec)))
 
 
-def get_params(blobs, dec=2):
+def get_params(blobs, dec=2, nucleus=None):
     """
     Returns dataframe of blob properties
 
@@ -111,6 +111,10 @@ def get_params(blobs, dec=2):
 
     dec : int
         number of places after decimal point for properties
+
+    nucleus: Blob object (class Blob), optional
+        A blob representing the nucleus, whose properties will be added
+        as the first row in the dataframe.
 
     Returns
     -------
@@ -129,16 +133,23 @@ def get_params(blobs, dec=2):
     # Create dictionary
     blob_params = build_dict()
 
+    # Get properties for nucleus if provided
+    if nucleus:
+        add_value(blob_params, nucleus, dec=dec)
+    
     # Get properties for each blobs
     for blob in blobs:
         add_value(blob_params, blob, dec=dec)
 
     # Transfer dictionary to pandas dataframe
-    df = pd.DataFrame(blob_params,
-                      index=['blob' + str(i) for i in range(1, len(blobs)+1)])
+    if nucleus:
+        df = pd.DataFrame(blob_params, 
+                          index=['nucleus'] + ['blob' + str(i) for i in range(1, len(blobs)+1)])
+    else:
+        df = pd.DataFrame(blob_params, 
+                          index=['blob' + str(i) for i in range(1, len(blobs)+1)])
 
     return df
-
 
 def main():
     im = cv.imread("example_images/ex3.tif")
